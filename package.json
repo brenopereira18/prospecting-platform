@@ -12,12 +12,13 @@
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "7.9.1",
-    "argon2": "^0.45.1",
+    "argon2": "0.44.0",
     "dotenv": "^17.4.2",
     "next": "16.3.3",
     "pg": "^8.23.0",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -28,6 +29,7 @@
     "eslint-config-next": "16.3.3",
     "prisma": "7.9.1",
     "tailwindcss": "^4",
+    "tsx": "^4.23.13",
     "typescript": "^5"
   },
   "packageManager": "pnpm@10.33.0"
