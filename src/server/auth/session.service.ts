@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
-import { prisma } from "../../../lib/prisma/client";
+import { prisma } from "@/lib/prisma/client";
 
 const SESSION_DURATION_DAYS = 30;
 
