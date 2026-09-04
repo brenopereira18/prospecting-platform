@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma/client";
-import { hashPassword } from "./password.service";
-import type { RegisterInput } from "./auth.schema";
+import { hashPassword, verifyPassword } from "./password.service";
+import type { RegisterInput, LoginInput } from "./auth.schema";
 
 export async function register(input: RegisterInput) {
   const existingUser = await prisma.user.findUnique({
@@ -22,6 +22,33 @@ export async function register(input: RegisterInput) {
       passwordHash,
     },
   });
+
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+  };
+}
+
+export async function login(input: LoginInput) {
+  const user = await prisma.user.findUnique({
+    where: {
+      email: input.email,
+    },
+  });
+
+  if (!user) {
+    throw new Error("Invalid email or password");
+  }
+
+  const isPasswordValid = await verifyPassword(
+    input.password,
+    user.passwordHash,
+  );
+
+  if (!isPasswordValid) {
+    throw new Error("Invalid email or password");
+  }
 
   return {
     id: user.id,
