@@ -70,3 +70,13 @@ export async function getSessionByToken(token: string) {
 
   return session;
 }
+
+export async function deleteSession(token: string) {
+  const tokenHash = hashToken(token);
+
+  await prisma.session.deleteMany({
+    where: {
+      tokenHash,
+    },
+  });
+}

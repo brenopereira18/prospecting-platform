@@ -2,8 +2,12 @@
 
 import { registerSchema, loginSchema } from "../../server/auth/auth.schema";
 import { register, login } from "../../server/auth/auth.service";
-import { createSession } from "../../server/auth/session.service";
+import {
+  createSession,
+  deleteSession,
+} from "../../server/auth/session.service";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 export async function registerAction(input: unknown) {
   const result = registerSchema.safeParse(input);
@@ -64,10 +68,6 @@ export async function loginAction(
       expires: session.expiresAt,
       path: "/",
     });
-
-    return {
-      success: true,
-    };
   } catch (error) {
     if (
       error instanceof Error &&
@@ -80,6 +80,8 @@ export async function loginAction(
     }
     throw error;
   }
+
+  redirect("/dashboard");
 }
 
 export type LoginActionState = {
@@ -90,3 +92,15 @@ export type LoginActionState = {
   };
   error?: string;
 };
+
+export async function logoutAction() {
+  const cookieStore = await cookies();
+  const sessionToken = cookieStore.get("session")?.value;
+
+  if (sessionToken) {
+    await deleteSession(sessionToken);
+  }
+
+  cookieStore.delete("session");
+  redirect("/login");
+}
