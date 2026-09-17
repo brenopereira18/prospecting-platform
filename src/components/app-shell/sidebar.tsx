@@ -16,7 +16,7 @@ const navigation = [
   },
   {
     label: "Descobrir negócios",
-    href: "/descoberta",
+    href: "/descobrir-negocios",
     icon: Search,
   },
   {
