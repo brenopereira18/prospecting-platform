@@ -1,24 +1,48 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { CityDTO } from "../../server/location/location.dto";
 
 interface CitySelectProps {
   cities: CityDTO[];
+  selectedCity: CityDTO | null;
   disabled: boolean;
+  onCityChange: (city: CityDTO) => void;
 }
 
-export function CitySelect({ cities, disabled }: CitySelectProps) {
+export function CitySelect({
+  cities,
+  selectedCity,
+  disabled,
+  onCityChange,
+}: CitySelectProps) {
   const [open, setOpen] = useState(false);
-  const [selectedCity, setSelectedCity] = useState<CityDTO | null>(null);
+  const selectRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        selectRef.current &&
+        !selectRef.current.contains(event.target as Node)
+      ) {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   function handleSelect(city: CityDTO) {
-    setSelectedCity(city);
+    onCityChange(city);
     setOpen(false);
   }
 
   return (
-    <div className="relative">
+    <div ref={selectRef} className="relative">
       <button
         type="button"
         disabled={disabled}
@@ -31,7 +55,7 @@ export function CitySelect({ cities, disabled }: CitySelectProps) {
       </button>
 
       {open && (
-        <div className="absolute z-10 mt-1 max-h-60 w-full overflow-y-auto rounded-md border border-sidebar-hover bg-terciary py-1 shadow-lg">
+        <div className="absolute z-10 mt-1 max-h-60 w-full overflow-y-auto rounded-md border border-sidebar-hover bg-terciary py-1 shadow-lg custom-scrollbar">
           {cities.map((city) => (
             <button
               key={city.id}
