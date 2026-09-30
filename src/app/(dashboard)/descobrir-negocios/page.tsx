@@ -1,12 +1,16 @@
 import { Plus, Search } from "lucide-react";
 
+import { LocationFilters } from "../../../components/discovery/location-filters";
+import { LocationService } from "../../../server/location/location.service";
 import { CategoryService } from "../../../server/categories/category.service";
 import { CategorySelect } from "../../../components/discovery/category-select";
 
 const categoryService = new CategoryService();
+const locationService = new LocationService();
 
 export default async function DiscoveryPage() {
   const categories = await categoryService.list();
+  const states = await locationService.listStates();
 
   return (
     <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
@@ -32,7 +36,7 @@ export default async function DiscoveryPage() {
         </header>
 
         <section className="rounded-xl border border-sidebar-hover bg-card shadow">
-          <div className="grid gap-4 p-6 md:grid-cols-4">
+          <div className="grid gap-4 p-6 md:grid-cols-5">
             <div className="space-y-2">
               <label className="text-sm font-medium">País</label>
 
@@ -45,17 +49,7 @@ export default async function DiscoveryPage() {
               </button>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Cidade / região</label>
-
-              <button
-                type="button"
-                className="flex h-9 w-full items-center justify-between rounded-md border border-sidebar-hover bg-transparent px-3 py-2 text-sm shadow-sm transition-colors hover:bg-sidebar-hover"
-              >
-                <span>Juiz de Fora, MG</span>
-                <span className="text-secundary">⌄</span>
-              </button>
-            </div>
+            <LocationFilters states={states} />
 
             <div className="space-y-2">
               <label className="text-sm font-medium">Categoria</label>
