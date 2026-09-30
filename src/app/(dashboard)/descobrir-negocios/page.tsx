@@ -1,9 +1,8 @@
 import { Plus, Search } from "lucide-react";
 
-import { LocationFilters } from "../../../components/discovery/location-filters";
 import { LocationService } from "../../../server/location/location.service";
 import { CategoryService } from "../../../server/categories/category.service";
-import { CategorySelect } from "../../../components/discovery/category-select";
+import { DiscoveryFilters } from "@/src/components/discovery/discovery-filter";
 
 const categoryService = new CategoryService();
 const locationService = new LocationService();
@@ -14,7 +13,7 @@ export default async function DiscoveryPage() {
 
   return (
     <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl">
+      <div className="w-full">
         <header className="mb-6 flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">
@@ -49,13 +48,7 @@ export default async function DiscoveryPage() {
               </button>
             </div>
 
-            <LocationFilters states={states} />
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Categoria</label>
-
-              <CategorySelect categories={categories} />
-            </div>
+            <DiscoveryFilters states={states} categories={categories} />
 
             <div className="flex items-end">
               <button

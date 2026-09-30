@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { StateDTO } from "../../server/location/location.dto";
 
 interface StateSelectProps {
@@ -15,6 +15,24 @@ export function StateSelect({
   onStateChange,
 }: StateSelectProps) {
   const [open, setOpen] = useState(false);
+  const selectRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        selectRef.current &&
+        !selectRef.current.contains(event.target as Node)
+      ) {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   function handleSelect(state: StateDTO) {
     onStateChange(state);
@@ -22,7 +40,7 @@ export function StateSelect({
   }
 
   return (
-    <div className="relative">
+    <div ref={selectRef} className="relative">
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
@@ -38,7 +56,7 @@ export function StateSelect({
       </button>
 
       {open && (
-        <div className="absolute z-10 mt-1 max-h-60 w-full overflow-y-auto rounded-md border border-sidebar-hover bg-terciary py-1 shadow-lg">
+        <div className="absolute z-10 mt-1 max-h-60 w-full overflow-y-auto rounded-md border border-sidebar-hover bg-terciary py-1 shadow-lg custom-scrollbar">
           {states.map((state) => (
             <button
               key={state.id}
