@@ -1,4 +1,4 @@
-import { Plus, Search } from "lucide-react";
+import { Plus } from "lucide-react";
 
 import { LocationService } from "../../../server/location/location.service";
 import { CategoryService } from "../../../server/categories/category.service";
@@ -34,32 +34,8 @@ export default async function DiscoveryPage() {
           </button>
         </header>
 
-        <section className="rounded-xl border border-sidebar-hover bg-card shadow">
-          <div className="grid gap-4 p-6 md:grid-cols-5">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">País</label>
-
-              <button
-                type="button"
-                className="flex h-9 w-full items-center justify-between rounded-md border border-sidebar-hover bg-transparent px-3 py-2 text-sm shadow-sm transition-colors hover:bg-sidebar-hover"
-              >
-                <span>Brasil</span>
-                <span className="text-secundary">⌄</span>
-              </button>
-            </div>
-
-            <DiscoveryFilters states={states} categories={categories} />
-
-            <div className="flex items-end">
-              <button
-                type="button"
-                className="inline-flex h-9 w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-background shadow transition-colors hover:opacity-90"
-              >
-                <Search className="mr-2 h-4 w-4" />
-                Pesquisar
-              </button>
-            </div>
-          </div>
+        <section className="rounded-xl border border-sidebar-hover bg-terciary shadow">
+          <DiscoveryFilters states={states} categories={categories} />
         </section>
       </div>
     </main>
