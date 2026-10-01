@@ -8,6 +8,7 @@ export interface EstablishmentCandidateDTO {
   website: string | null;
   address: string;
   openingHours: string[];
+  score: number;
 }
 
 export interface GooglePlace {
