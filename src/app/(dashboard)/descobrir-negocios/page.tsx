@@ -34,9 +34,7 @@ export default async function DiscoveryPage() {
           </button>
         </header>
 
-        <section className="rounded-xl border border-sidebar-hover bg-terciary shadow">
-          <DiscoveryFilters states={states} categories={categories} />
-        </section>
+        <DiscoveryFilters states={states} categories={categories} />
       </div>
     </main>
   );
