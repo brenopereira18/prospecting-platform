@@ -46,11 +46,7 @@ export function StateSelect({
         onClick={() => setOpen((current) => !current)}
         className="flex h-9 w-full items-center justify-between rounded-md border border-sidebar-hover bg-transparent px-3 py-2 text-sm shadow-sm transition-colors hover:bg-sidebar-hover"
       >
-        <span>
-          {selectedState
-            ? `${selectedState.name} - ${selectedState.abbreviation}`
-            : "Selecione"}
-        </span>
+        <span>{selectedState ? `${selectedState.name}` : "Selecione"}</span>
 
         <span className="text-secundary">⌄</span>
       </button>
@@ -64,7 +60,7 @@ export function StateSelect({
               onClick={() => handleSelect(state)}
               className="flex w-full px-3 py-2 text-left text-sm hover:bg-sidebar-hover"
             >
-              {state.name} - {state.abbreviation}
+              {state.name}
             </button>
           ))}
         </div>

@@ -12,6 +12,7 @@ import { CitySelect } from "./city-select";
 import { StateSelect } from "./state-select";
 import { searchPlaces } from "@/src/app/actions/places";
 import type { EstablishmentCandidateDTO } from "@/src/server/places/places.dto";
+import { DiscoveryResults } from "./discovery-results";
 
 interface DiscoveryFiltersProps {
   states: StateDTO[];
@@ -27,6 +28,7 @@ export function DiscoveryFilters({
   const [selectedCategory, setSelectedCategory] = useState<CategoryDTO | null>(
     null,
   );
+  const [searchLimit, setSearchLimit] = useState<20 | 40 | 60>(20);
   const [places, setPlaces] = useState<EstablishmentCandidateDTO[]>([]);
   const [cities, setCities] = useState<CityDTO[]>([]);
 
@@ -49,66 +51,98 @@ export function DiscoveryFilters({
       selectedCategory.name,
       selectedCity.name,
       selectedState.name,
+      searchLimit,
     );
 
     setPlaces(results);
   }
 
+  const searchLimitOptions = [20, 40, 60] as const;
+
   return (
-    <div className="grid gap-4 p-6 md:grid-cols-5">
-      <div className="space-y-2">
-        <label className="text-sm font-medium">País</label>
+    <>
+      <section className="rounded-xl border border-sidebar-hover bg-terciary shadow">
+        <div className="grid gap-4 p-6 md:grid-cols-5">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">País</label>
 
-        <button
-          type="button"
-          disabled
-          className="flex h-9 w-full items-center justify-between rounded-md border border-sidebar-hover bg-transparent px-3 py-2 text-sm shadow-sm disabled:cursor-default"
-        >
-          <span>Brasil</span>
-        </button>
-      </div>
+            <button
+              type="button"
+              disabled
+              className="flex h-9 w-full items-center justify-between rounded-md border border-sidebar-hover bg-transparent px-3 py-2 text-sm shadow-sm disabled:cursor-default"
+            >
+              <span>Brasil</span>
+            </button>
+          </div>
 
-      <div className="space-y-2">
-        <label className="text-sm font-medium">Estado</label>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Estado</label>
 
-        <StateSelect
-          states={states}
-          selectedState={selectedState}
-          onStateChange={handleStateChange}
-        />
-      </div>
+            <StateSelect
+              states={states}
+              selectedState={selectedState}
+              onStateChange={handleStateChange}
+            />
+          </div>
 
-      <div className="space-y-2">
-        <label className="text-sm font-medium">Cidade</label>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Cidade</label>
 
-        <CitySelect
-          cities={cities}
-          selectedCity={selectedCity}
-          disabled={!selectedState}
-          onCityChange={setSelectedCity}
-        />
-      </div>
+            <CitySelect
+              cities={cities}
+              selectedCity={selectedCity}
+              disabled={!selectedState}
+              onCityChange={setSelectedCity}
+            />
+          </div>
 
-      <div className="space-y-2">
-        <label className="text-sm font-medium">Categoria</label>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Categoria</label>
 
-        <CategorySelect
-          categories={categories}
-          selectedCategory={selectedCategory}
-          onCategoryChange={setSelectedCategory}
-        />
-      </div>
+            <CategorySelect
+              categories={categories}
+              selectedCategory={selectedCategory}
+              onCategoryChange={setSelectedCategory}
+            />
+          </div>
 
-      <div className="flex items-end">
-        <button
-          type="button"
-          onClick={handleSearch}
-          className="inline-flex h-9 w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-background shadow transition-colors hover:opacity-90"
-        >
-          <Search className="mr-2 h-4 w-4" />
-          Pesquisar
-        </button>
-      </div>
-    </div>
+          <div className="flex items-end">
+            <button
+              type="button"
+              onClick={handleSearch}
+              className="inline-flex h-9 w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-background shadow transition-colors hover:opacity-90"
+            >
+              <Search className="mr-2 h-4 w-4" />
+              Pesquisar
+            </button>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 px-6 pb-6">
+          <span className="mr-1 text-sm text-foreground">Buscar</span>
+
+          {searchLimitOptions.map((limit) => {
+            const selected = searchLimit === limit;
+
+            return (
+              <button
+                key={limit}
+                type="button"
+                onClick={() => setSearchLimit(limit)}
+                className={`rounded-3xl border px-4 py-2 text-xs font-medium transition-colors ${
+                  selected
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-sidebar-hover text-secundary hover:bg-sidebar-hover"
+                }`}
+              >
+                {limit} negócios
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <DiscoveryResults places={places} />
+    </>
   );
 }
