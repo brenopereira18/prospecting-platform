@@ -4,11 +4,11 @@ export interface EstablishmentCandidateDTO {
   phone: string | null;
   rating: number | null;
   userRatingCount: number;
-  photoName: string | null;
   website: string | null;
   address: string;
   openingHours: string[];
   score: number;
+  isRegistered?: boolean;
 }
 
 export interface GooglePlace {
@@ -19,16 +19,11 @@ export interface GooglePlace {
   internationalPhoneNumber?: string;
   rating?: number;
   userRatingCount?: number;
-  photos?: GooglePlacePhoto[];
   websiteUri?: string;
   formattedAddress?: string;
   regularOpeningHours?: {
     weekdayDescriptions?: string[];
   };
-}
-
-export interface GooglePlacePhoto {
-  name: string;
 }
 
 export interface GoogleTextSearchResponse {
