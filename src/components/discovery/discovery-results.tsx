@@ -3,10 +3,14 @@ import { EstablishmentCard } from "../establishment/establishment-card";
 
 interface DiscoveryResultsProps {
   places: EstablishmentCandidateDTO[];
+  categoryId: string | null;
 }
 
-export function DiscoveryResults({ places }: DiscoveryResultsProps) {
-  if (places.length === 0) {
+export function DiscoveryResults({
+  places,
+  categoryId,
+}: DiscoveryResultsProps) {
+  if (places.length === 0 || !categoryId) {
     return null;
   }
 
@@ -18,7 +22,11 @@ export function DiscoveryResults({ places }: DiscoveryResultsProps) {
 
       <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {places.map((place) => (
-          <EstablishmentCard key={place.placeId} establishment={place} />
+          <EstablishmentCard
+            key={place.placeId}
+            establishment={place}
+            categoryId={categoryId}
+          />
         ))}
       </div>
     </section>

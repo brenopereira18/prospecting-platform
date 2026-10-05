@@ -41,7 +41,6 @@ export class PlacesService {
             "places.internationalPhoneNumber",
             "places.rating",
             "places.userRatingCount",
-            "places.photos",
             "places.websiteUri",
             "places.formattedAddress",
             "places.regularOpeningHours",
@@ -108,11 +107,11 @@ export class PlacesService {
       phone,
       rating,
       userRatingCount,
-      photoName: place.photos?.[0]?.name ?? null,
       website,
       address: place.formattedAddress ?? "",
       openingHours: place.regularOpeningHours?.weekdayDescriptions ?? [],
       score,
+      isRegistered: false,
     };
   }
 }
