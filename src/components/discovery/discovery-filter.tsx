@@ -29,6 +29,9 @@ export function DiscoveryFilters({
     null,
   );
   const [searchLimit, setSearchLimit] = useState<20 | 40 | 60>(20);
+  const [searchedCategoryId, setSearchedCategoryId] = useState<string | null>(
+    null,
+  );
   const [places, setPlaces] = useState<EstablishmentCandidateDTO[]>([]);
   const [cities, setCities] = useState<CityDTO[]>([]);
 
@@ -47,6 +50,8 @@ export function DiscoveryFilters({
       return;
     }
 
+    const categoryId = selectedCategory.id;
+
     const results = await searchPlaces(
       selectedCategory.name,
       selectedCity.name,
@@ -55,6 +60,7 @@ export function DiscoveryFilters({
     );
 
     setPlaces(results);
+    setSearchedCategoryId(categoryId);
   }
 
   const searchLimitOptions = [20, 40, 60] as const;
@@ -142,7 +148,7 @@ export function DiscoveryFilters({
         </div>
       </section>
 
-      <DiscoveryResults places={places} />
+      <DiscoveryResults places={places} categoryId={searchedCategoryId} />
     </>
   );
 }

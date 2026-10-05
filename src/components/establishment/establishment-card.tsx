@@ -1,30 +1,54 @@
+"use client";
+
+import { useState } from "react";
+
 import { Globe, MapPin, Phone, Star } from "lucide-react";
 
 import type { EstablishmentCandidateDTO } from "../../server/places/places.dto";
+import { createGoogleLead } from "@/src/app/actions/leads";
 
 interface EstablishmentCardProps {
   establishment: EstablishmentCandidateDTO;
+  categoryId: string;
 }
 
-export function EstablishmentCard({ establishment }: EstablishmentCardProps) {
+export function EstablishmentCard({
+  establishment,
+  categoryId,
+}: EstablishmentCardProps) {
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [isRegistered, setIsRegistered] = useState(establishment.isRegistered);
+
+  async function handleRegisterLead() {
+    if (isRegistering || isRegistered) {
+      return;
+    }
+
+    try {
+      setIsRegistering(true);
+
+      await createGoogleLead({
+        categoryId,
+        placeId: establishment.placeId,
+        name: establishment.name,
+        address: establishment.address || null,
+        website: establishment.website,
+        phone: establishment.phone,
+        rating: establishment.rating,
+        userRatingCount: establishment.userRatingCount,
+      });
+
+      setIsRegistered(true);
+    } catch (error) {
+      console.error("Erro ao cadastrar lead:", error);
+    } finally {
+      setIsRegistering(false);
+    }
+  }
+
   return (
     <article className="flex flex-col overflow-hidden rounded-xl border border-sidebar-hover bg-terciary shadow">
-      {establishment.photoName ? (
-        <div className="h-44 w-full overflow-hidden">
-          <img
-            src={`/api/places/photo?name=${encodeURIComponent(
-              establishment.photoName,
-            )}`}
-            alt={establishment.name}
-            className="h-full w-full object-cover"
-          />
-        </div>
-      ) : (
-        <div className="flex h-44 w-full items-center justify-center bg-sidebar-hover text-sm text-secundary">
-          Sem foto disponível
-        </div>
-      )}
-
       <div className="flex flex-col space-y-1.5 p-6 pb-3">
         <div className="flex items-start justify-between gap-2">
           <h3 className="text-base font-semibold leading-snug tracking-tight">
@@ -86,9 +110,15 @@ export function EstablishmentCard({ establishment }: EstablishmentCardProps) {
         <div className="mt-auto pt-4">
           <button
             type="button"
-            className="inline-flex h-9 w-full items-center justify-center rounded-md border border-sidebar-hover px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-sidebar-hover"
+            onClick={handleRegisterLead}
+            disabled={isRegistering || isRegistered}
+            className="inline-flex h-9 w-full items-center justify-center rounded-md border border-sidebar-hover px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-sidebar-hover disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Cadastrar Lead
+            {isRegistering
+              ? "Cadastrando..."
+              : isRegistered
+                ? "Lead já cadastrado"
+                : "Cadastrar Lead"}
           </button>
         </div>
       </div>
