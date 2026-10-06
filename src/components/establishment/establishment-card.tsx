@@ -16,7 +16,6 @@ export function EstablishmentCard({
   establishment,
   categoryId,
 }: EstablishmentCardProps) {
-  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [isRegistering, setIsRegistering] = useState(false);
   const [isRegistered, setIsRegistered] = useState(establishment.isRegistered);
 
