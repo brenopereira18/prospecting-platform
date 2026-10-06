@@ -14,7 +14,7 @@ export default async function DiscoveryPage() {
   return (
     <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
       <div className="w-full">
-        <header className="mb-6 flex flex-wrap items-start justify-between gap-3">
+        <header className="mb-6 flex items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">
               Descobrir negócios
@@ -27,7 +27,7 @@ export default async function DiscoveryPage() {
 
           <button
             type="button"
-            className="inline-flex h-9 items-center justify-center rounded-md border border-sidebar-hover px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-sidebar-hover"
+            className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-background transition-opacity hover:opacity-90"
           >
             <Plus className="mr-2 h-4 w-4" />
             Cadastro manual

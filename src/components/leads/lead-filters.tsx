@@ -5,6 +5,7 @@ import { ChevronDown } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { LeadStatus } from "../../../generated/prisma/enums";
+import { LEAD_STATUS_OPTIONS } from "@/src/constants/lead-status";
 import type { CategoryDTO } from "../../server/categories/category.dto";
 
 interface LeadFiltersProps {
@@ -105,15 +106,11 @@ export function LeadFilters({ categories }: LeadFiltersProps) {
           >
             <option value="">Todos os status</option>
 
-            <option value={LeadStatus.NOVO}>Novo</option>
-
-            <option value={LeadStatus.PROPOSTA_ENVIADA}>
-              Proposta enviada
-            </option>
-
-            <option value={LeadStatus.GANHO}>Ganho</option>
-
-            <option value={LeadStatus.PERDIDO}>Perdido</option>
+            {LEAD_STATUS_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
           </select>
 
           <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-secundary" />

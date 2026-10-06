@@ -1,3 +1,6 @@
+"use client";
+
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import {
   BarChart3,
@@ -37,6 +40,8 @@ const navigation = [
 ];
 
 export function Sidebar() {
+  const pathname = usePathname();
+
   return (
     <aside className="flex h-screen w-60 flex-col border-r border-sidebar-hover bg-background">
       <div className="flex h-16 items-center px-6">
@@ -53,7 +58,8 @@ export function Sidebar() {
         <ul className="space-y-1">
           {navigation.map((item) => {
             const Icon = item.icon;
-            const isActive = item.href === "/dashboard";
+            const isActive =
+              pathname === item.href || pathname.startsWith(`${item.href}/`);
 
             return (
               <li key={item.href}>
