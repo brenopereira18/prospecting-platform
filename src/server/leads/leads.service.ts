@@ -1,6 +1,7 @@
 import { LeadSource } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma/client";
 import { PreliminaryScoreService } from "../scoring/preliminary-score.service";
+import { LeadFiltersDTO, LeadListItemDTO } from "./lead.dto";
 
 interface CreateGoogleLeadInput {
   userId: string;
@@ -35,9 +36,62 @@ export class LeadService {
         address: input.address,
         website: input.website,
         phone: input.phone,
+        rating: input.rating,
+        userRatingCount: input.userRatingCount,
         score,
       },
     });
+  }
+
+  async listByUser(
+    userId: string,
+    filters: LeadFiltersDTO = {},
+  ): Promise<LeadListItemDTO[]> {
+    const leads = await prisma.lead.findMany({
+      where: {
+        userId,
+
+        ...(filters.name && {
+          name: {
+            contains: filters.name,
+            mode: "insensitive",
+          },
+        }),
+
+        ...(filters.categoryId && {
+          categoryId: filters.categoryId,
+        }),
+
+        ...(filters.status && {
+          status: filters.status,
+        }),
+      },
+
+      select: {
+        id: true,
+        name: true,
+        address: true,
+        phone: true,
+        website: true,
+        rating: true,
+        userRatingCount: true,
+        score: true,
+        status: true,
+
+        category: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return leads;
   }
 
   async findRegisteredGooglePlaceIds(
