@@ -1,4 +1,5 @@
 import { Globe, MapPin, Phone, Star } from "lucide-react";
+import Link from "next/link";
 
 import type { LeadListItemDTO } from "../../server/leads/lead.dto";
 import { LEAD_STATUS_LABELS } from "@/src/constants/lead-status";
@@ -79,12 +80,12 @@ export function LeadCard({ lead }: LeadCardProps) {
         </div>
 
         <div className="mt-auto pt-4">
-          <button
-            type="button"
+          <Link
+            href={`/leads/${lead.id}`}
             className="inline-flex h-9 w-full items-center justify-center rounded-md border border-sidebar-hover px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-sidebar-hover"
           >
             Ver lead
-          </button>
+          </Link>
         </div>
       </div>
     </article>

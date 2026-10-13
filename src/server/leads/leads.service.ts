@@ -1,7 +1,7 @@
 import { LeadSource } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma/client";
 import { PreliminaryScoreService } from "../scoring/preliminary-score.service";
-import { LeadFiltersDTO, LeadListItemDTO } from "./lead.dto";
+import { LeadFiltersDTO, LeadListItemDTO, LeadDetailDTO } from "./lead.dto";
 
 interface CreateGoogleLeadInput {
   userId: string;
@@ -120,5 +120,40 @@ export class LeadService {
         .map((lead) => lead.sourceId)
         .filter((sourceId): sourceId is string => sourceId !== null),
     );
+  }
+
+  async findById(id: string, userId: string): Promise<LeadDetailDTO | null> {
+    return prisma.lead.findFirst({
+      where: {
+        id,
+        userId,
+      },
+
+      select: {
+        id: true,
+        name: true,
+        address: true,
+        phone: true,
+        website: true,
+        rating: true,
+        userRatingCount: true,
+        score: true,
+        status: true,
+
+        source: true,
+        sourceId: true,
+        notes: true,
+        wizardStep: true,
+        createdAt: true,
+        updatedAt: true,
+
+        category: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
   }
 }

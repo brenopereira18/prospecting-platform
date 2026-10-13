@@ -1,4 +1,5 @@
 import { LeadStatus } from "../../../generated/prisma/client";
+import type { LeadSource } from "@/generated/prisma/enums";
 
 export interface LeadListItemDTO {
   id: string;
@@ -14,6 +15,15 @@ export interface LeadListItemDTO {
     id: string;
     name: string;
   };
+}
+
+export interface LeadDetailDTO extends LeadListItemDTO {
+  source: LeadSource;
+  sourceId: string | null;
+  notes: string | null;
+  wizardStep: number;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface LeadFiltersDTO {
