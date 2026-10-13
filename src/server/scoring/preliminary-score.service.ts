@@ -1,20 +1,43 @@
-interface PreliminaryScoreInput {
+export interface PreliminaryScoreInput {
   website: string | null;
   phone: string | null;
   rating: number | null;
   userRatingCount: number;
 }
 
+export interface PreliminaryScoreResult {
+  total: number;
+  breakdown: {
+    website: number;
+    phone: number;
+    reviewCount: number;
+    rating: number;
+  };
+}
+
 export class PreliminaryScoreService {
   calculate(input: PreliminaryScoreInput): number {
-    let score = 0;
+    return this.calculateDetailed(input).total;
+  }
 
-    score += this.calculateWebsiteScore(input.website);
-    score += this.calculatePhoneScore(input.phone);
-    score += this.calculateReviewCountScore(input.userRatingCount);
-    score += this.calculateRatingScore(input.rating);
+  calculateDetailed(input: PreliminaryScoreInput): PreliminaryScoreResult {
+    const breakdown = {
+      website: this.calculateWebsiteScore(input.website),
+      phone: this.calculatePhoneScore(input.phone),
+      reviewCount: this.calculateReviewCountScore(input.userRatingCount),
+      rating: this.calculateRatingScore(input.rating),
+    };
 
-    return score;
+    const total =
+      breakdown.website +
+      breakdown.phone +
+      breakdown.reviewCount +
+      breakdown.rating;
+
+    return {
+      total,
+      breakdown,
+    };
   }
 
   private calculateWebsiteScore(website: string | null): number {
