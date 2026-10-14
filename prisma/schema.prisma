@@ -34,12 +34,27 @@ model Session {
 }
 
 model Category {
-  id        String   @id @default(uuid())
-  name      String   @unique
-  createdAt DateTime @default(now())
-  leads     Lead[]
+  id                String             @id @default(uuid())
+  name              String             @unique
+  approachTemplates ApproachTemplate[]
+  createdAt         DateTime           @default(now())
+  leads             Lead[]
 
   @@map("categories")
+}
+
+model ApproachTemplate {
+  id         String   @id @default(uuid())
+  categoryId String
+  title      String
+  content    String   @db.Text
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  category Category @relation(fields: [categoryId], references: [id])
+
+  @@index([categoryId])
+  @@map("approach_templates")
 }
 
 enum LeadSource {
@@ -55,7 +70,7 @@ enum LeadStatus {
 }
 
 model Lead {
-  id              String     @id @default(uuid())
+  id              String            @id @default(uuid())
   userId          String
   source          LeadSource
   sourceId        String?
@@ -64,18 +79,49 @@ model Lead {
   address         String?
   website         String?
   phone           String?
-  status          LeadStatus @default(NOVO)
+  status          LeadStatus        @default(NOVO)
   rating          Float?
   userRatingCount Int?
   score           Int?
-  wizardStep      Int        @default(1)
+  wizardStep      Int               @default(1)
   notes           String?
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
-  user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category        Category   @relation(fields: [categoryId], references: [id])
+  interactions    LeadInteraction[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category        Category          @relation(fields: [categoryId], references: [id])
 
   @@unique([userId, source, sourceId])
   @@index([userId, status])
   @@map("leads")
+}
+
+model LeadInteraction {
+  id        String             @id @default(uuid())
+  leadId    String
+  channel   InteractionChannel
+  type      InteractionType
+  notes     String?            @db.Text
+  createdAt DateTime           @default(now())
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId, createdAt])
+  @@map("lead_interactions")
+}
+
+enum InteractionChannel {
+  WHATSAPP
+  INSTAGRAM
+  EMAIL
+  PHONE
+  OTHER
+}
+
+enum InteractionType {
+  FIRST_CONTACT
+  FOLLOW_UP
+  RESPONSE_RECEIVED
+  MEETING
+  OTHER
 }
