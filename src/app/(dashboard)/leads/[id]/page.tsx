@@ -1,10 +1,23 @@
 import { notFound, redirect } from "next/navigation";
+import Link from "next/link";
+import {
+  ArrowLeft,
+  Globe,
+  MapPin,
+  Phone,
+  Star,
+  WandSparkles,
+} from "lucide-react";
 import { getCurrentUser } from "@/src/server/auth/current-user.service";
 import { LeadService } from "@/src/server/leads/leads.service";
 import { LEAD_STATUS_LABELS } from "@/src/constants/lead-status";
 import { LeadTabs } from "@/src/components/leads/lead-tabs";
 import { LeadAnalysis } from "@/src/components/leads/lead-analysis";
 import { PreliminaryScoreService } from "@/src/server/scoring/preliminary-score.service";
+import { approachTemplateService } from "@/src/server/approach-templates/approach-template.service";
+import { LeadApproach } from "@/src/components/leads/lead-approach";
+import { LeadInteractions } from "@/src/components/leads/lead-interaction";
+import { leadInteractionService } from "@/src/server/lead-interactions/lead-interaction.service";
 
 interface LeadDetailPageProps {
   params: Promise<{
@@ -30,6 +43,13 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
   }
 
   const preliminaryScoreService = new PreliminaryScoreService();
+  const approachTemplates = await approachTemplateService.findByCategory(
+    lead.category.id,
+  );
+  const interactions = await leadInteractionService.findByLead(
+    lead.id,
+    user.id,
+  );
 
   const analysis =
     lead.score !== null
@@ -42,57 +62,105 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
       : null;
 
   return (
-    <div className="px-4 py-6 sm:px-6 lg:px-8">
-      <div className="w-full">
-        {/* Cabeçalho */}
-        <header className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0">
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-              {lead.name}
-            </h1>
+    <div className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+      <div className="mx-auto w-full max-w-7xl space-y-8">
+        <Link
+          href="/leads"
+          className="inline-flex min-h-9 items-center gap-2 rounded-md text-sm text-secundary transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+        >
+          <ArrowLeft aria-hidden="true" className="size-4" />
+          Voltar para leads
+        </Link>
 
-            <p className="mt-1 text-sm text-secundary">
-              {lead.category.name}
-              {lead.address && ` · ${lead.address}`}
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex h-9 min-w-40 items-center justify-between gap-3 rounded-md border border-sidebar-hover bg-terciary px-3 text-sm text-foreground">
-              <span>{LEAD_STATUS_LABELS[lead.status]}</span>
-              <span className="text-secundary">⌄</span>
+        <header className="overflow-hidden rounded-2xl border border-sidebar-hover bg-card">
+          <div className="flex flex-col justify-between gap-6 p-5 sm:p-7 xl:flex-row xl:items-start">
+            <div className="flex min-w-0 items-start gap-4">
+              <div className="min-w-0">
+                <p className="mb-2 text-sm font-medium text-primary [overflow-wrap:anywhere]">
+                  {lead.category.name}
+                </p>
+                <h1 className="text-2xl font-semibold leading-tight tracking-tight text-foreground [overflow-wrap:anywhere] sm:text-3xl">
+                  {lead.name}
+                </h1>
+                <p className="mt-3 flex max-w-2xl items-start gap-2 text-sm leading-relaxed text-secundary">
+                  <MapPin
+                    aria-hidden="true"
+                    className="mt-0.5 size-4 shrink-0"
+                  />
+                  <span className="[overflow-wrap:anywhere]">
+                    {lead.address ?? "Endereço não identificado"}
+                  </span>
+                </p>
+              </div>
             </div>
 
-            <button
-              type="button"
-              disabled
-              className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Gerar protótipo
-            </button>
+            <div className="flex shrink-0 flex-wrap items-center gap-3 xl:flex-col xl:items-end">
+              <span className="inline-flex items-center gap-2 rounded-full border border-sidebar-hover bg-background/50 px-3 py-1.5 text-xs font-medium text-foreground">
+                <span
+                  aria-hidden="true"
+                  className="size-1.5 rounded-full bg-secundary"
+                />
+                {LEAD_STATUS_LABELS[lead.status]}
+              </span>
+              <div className="flex flex-col items-start gap-1.5 xl:items-end">
+                <button
+                  type="button"
+                  disabled
+                  aria-describedby="prototype-availability"
+                  className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-sidebar-hover bg-sidebar-hover/40 px-4 text-sm font-medium text-secundary disabled:cursor-not-allowed"
+                >
+                  <WandSparkles aria-hidden="true" className="size-4" />
+                  Gerar protótipo
+                </button>
+                <span
+                  id="prototype-availability"
+                  className="text-xs text-secundary"
+                >
+                  Disponível em breve
+                </span>
+              </div>
+            </div>
           </div>
+
+          <dl className="grid border-t border-sidebar-hover bg-terciary/40 md:grid-cols-3">
+            <div className="min-w-0 border-b border-sidebar-hover px-5 py-4 sm:px-7 md:border-r md:border-b-0">
+              <dt className="flex items-center gap-2 text-xs text-secundary">
+                <Phone aria-hidden="true" className="size-3.5" />
+                Telefone
+              </dt>
+              <dd className="mt-2 text-sm font-medium text-foreground [overflow-wrap:anywhere]">
+                {lead.phone ?? "Não identificado"}
+              </dd>
+            </div>
+            <div className="min-w-0 border-b border-sidebar-hover px-5 py-4 sm:px-7 md:border-r md:border-b-0">
+              <dt className="flex items-center gap-2 text-xs text-secundary">
+                <Globe aria-hidden="true" className="size-3.5" />
+                Site
+              </dt>
+              <dd className="mt-2 text-sm font-medium text-foreground [overflow-wrap:anywhere]">
+                {lead.website ?? "Não identificado"}
+              </dd>
+            </div>
+            <div className="min-w-0 px-5 py-4 sm:px-7">
+              <dt className="flex items-center gap-2 text-xs text-secundary">
+                <Star aria-hidden="true" className="size-3.5" />
+                Avaliações no Google
+              </dt>
+              <dd className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
+                <span className="font-medium text-foreground">
+                  {lead.rating !== null
+                    ? `${lead.rating.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} / 5`
+                    : "Sem nota"}
+                </span>
+                <span className="text-xs text-secundary">
+                  {lead.userRatingCount !== null
+                    ? `${lead.userRatingCount.toLocaleString("pt-BR")} avaliações`
+                    : "Quantidade não informada"}
+                </span>
+              </dd>
+            </div>
+          </dl>
         </header>
-
-        {/* Indicadores */}
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center rounded-md border border-sidebar-hover bg-terciary px-2.5 py-1 text-xs font-medium text-foreground">
-            {LEAD_STATUS_LABELS[lead.status]}
-          </span>
-
-          <span className="inline-flex items-center rounded-md border border-sidebar-hover bg-terciary px-2.5 py-1 text-xs font-medium text-foreground">
-            Score preliminar {lead.score ?? "Não calculado"}
-          </span>
-
-          {lead.phone && (
-            <span className="inline-flex items-center rounded-md border border-sidebar-hover bg-terciary px-2.5 py-1 text-xs text-secundary">
-              {lead.phone}
-            </span>
-          )}
-
-          <span className="inline-flex items-center rounded-md border border-sidebar-hover bg-terciary px-2.5 py-1 text-xs text-secundary">
-            {lead.website ? "Site identificado" : "Sem site identificado"}
-          </span>
-        </div>
 
         {/* Conteúdo principal */}
         <LeadTabs
@@ -105,6 +173,16 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
               rating={lead.rating}
               userRatingCount={lead.userRatingCount}
             />
+          }
+          approach={
+            <LeadApproach
+              leadName={lead.name}
+              userName={user.name}
+              templates={approachTemplates}
+            />
+          }
+          interactions={
+            <LeadInteractions leadId={lead.id} interactions={interactions} />
           }
         />
       </div>
