@@ -1,0 +1,154 @@
+/* Scoped defaults override Preflight while allowing Tailwind utilities to win. */
+@layer components {
+  .hamburgueria-template {
+    --yellow: var(--template-primary, #f5bb16);
+    --yellow-dark: #c98b00;
+    --ink: var(--template-secondary, #141413);
+    --black: #0c0c0b;
+    --paper: var(--template-tertiary, #f6f3ec);
+    --muted: #69665f;
+    --line: #dedad0;
+
+    --display: var(--font-hamburgueria-display), Impact, "Arial Narrow", sans-serif;
+    --body: var(--font-hamburgueria-body), Arial, sans-serif;
+    --hand: var(--font-hamburgueria-hand), cursive;
+
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.6;
+    min-height: 100vh;
+    width: 100%;
+    isolation: isolate;
+  }
+
+  .hamburgueria-template h1,
+  .hamburgueria-template h2,
+  .hamburgueria-template h3 {
+    font-family: var(--display);
+    line-height: 1.03;
+  }
+
+  .hamburgueria-template h2 {
+    font-size: clamp(36px, 4vw, 56px);
+    font-weight: 800;
+    letter-spacing: -0.7px;
+  }
+
+  .hamburgueria-template h3 {
+    font-size: 25px;
+    font-weight: 700;
+  }
+
+  .hamburgueria-template svg {
+    width: 24px;
+    height: 24px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    flex-shrink: 0;
+  }
+
+  .hamburgueria-template a:focus-visible,
+  .hamburgueria-template button:focus-visible,
+  .hamburgueria-template summary:focus-visible {
+    outline: 3px solid var(--yellow-dark);
+    outline-offset: 5px;
+  }
+
+  .hamburgueria-template .product-allergens {
+    font-size: 10px !important;
+    min-height: 0 !important;
+    color: #7b756b !important;
+  }
+
+  .hamburgueria-template .service-note {
+    font-size: 11px !important;
+  }
+
+  .hamburgueria-template .footer-order > p {
+    font-size: 24px !important;
+    line-height: 1.1 !important;
+    margin-bottom: 17px !important;
+  }
+
+  .hamburgueria-template [hidden] {
+    display: none !important;
+  }
+
+  .hamburgueria-template button {
+    cursor: pointer;
+  }
+
+  .hamburgueria-template button:disabled {
+    cursor: default;
+  }
+
+  .hamburgueria-template :is(button, a, input, select, textarea, summary) {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .hamburgueria-template .navigation .nav-active::after {
+    content: "";
+  }
+
+  /* Preflight resets the native dialog's centered margin. */
+  .hamburgueria-template .demo-dialog {
+    margin: auto;
+  }
+
+  .hamburgueria-template [id] {
+    scroll-margin-top: 90px;
+  }
+
+  @media (max-width: 900px) {
+    .hamburgueria-template .qualities-grid > div {
+      padding: 0 24px !important;
+    }
+
+    .hamburgueria-template .qualities-grid > div:nth-child(odd) {
+      padding-left: 0 !important;
+    }
+  }
+
+  @media (max-width: 700px) {
+    .hamburgueria-template [id] {
+      scroll-margin-top: 20px;
+    }
+
+    .hamburgueria-template .qualities-grid > div {
+      padding: 0 0 0 12px !important;
+    }
+
+    .hamburgueria-template .qualities-grid > div:nth-child(odd) {
+      padding-right: 10px !important;
+    }
+
+    .hamburgueria-template .product-allergens {
+      font-size: 9px !important;
+      line-height: 1.5 !important;
+    }
+
+    .hamburgueria-template .footer-order > p {
+      font-size: 23px !important;
+      margin: 0 !important;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hamburgueria-template *,
+    .hamburgueria-template *::before,
+    .hamburgueria-template *::after {
+      transition: none !important;
+      animation: none !important;
+    }
+
+    .hamburgueria-template .button:hover,
+    .hamburgueria-template .product-card:hover img {
+      transform: none !important;
+    }
+  }
+}
