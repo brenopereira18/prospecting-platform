@@ -79,8 +79,8 @@ export const brasaBurgerDefaultDocument: HamburgueriaPrototypeDocument =
         ),
         primaryCtaLabel: "Ver cardápio e pedir",
         secondaryCtaLabel: "Conhecer a casa",
-        reviewStarsLabel: "5 estrelas",
-        reviewCountLabel: "boas mordidas",
+        reviewStarsLabel: "{rating} de 5 estrelas",
+        reviewCountLabel: "Mais de {count} boas mordidas",
         hoursSummary: "Ter. a dom., 18h às 23h",
         serviceSummary: "Delivery e retirada",
         badgeText: "100%",
@@ -104,24 +104,24 @@ export const brasaBurgerDefaultDocument: HamburgueriaPrototypeDocument =
           },
           {
             id: "feito-na-hora",
-            icon: "clock",
+            icon: "burger",
             title: "Feito na hora",
             description: "Da chapa direto para você.",
           },
           {
             id: "capricho",
-            icon: "check",
+            icon: "leaf",
             title: "Capricho do início ao fim",
             description: "Ingredientes escolhidos a dedo.",
           },
         ],
       },
       menu: {
-        eyebrow: "OS FAVORITOS DA CASA",
-        title: "Escolha sua próxima mordida",
+        eyebrow: "Escolha sua próxima mordida",
+        title: "OS FAVORITOS DA CASA",
         helpLinkLabel: "Como fazer seu pedido",
         note: "Feitos na hora, sempre.",
-        categoryGroupLabel: "Categorias",
+        categoryGroupLabel: "Categorias do cardápio",
         defaultCategoryId: "burgers",
         categories: [
           { id: "burgers", label: "Burgers" },
@@ -140,7 +140,7 @@ export const brasaBurgerDefaultDocument: HamburgueriaPrototypeDocument =
             priceCents: 2790,
             image: templateImage(
               "classic",
-              "BRASA CLÁSSICO: Pão brioche, burger de 160 g, cheddar, alface, tomate, cebola roxa e maionese da casa.",
+              "brasa clássico: Pão brioche, burger de 160 g, cheddar, alface, tomate, cebola roxa e maionese da casa.",
             ),
             badge: "O queridinho da casa",
             allergens: "Contém glúten, leite e ovos.",
@@ -154,7 +154,7 @@ export const brasaBurgerDefaultDocument: HamburgueriaPrototypeDocument =
             priceCents: 3690,
             image: templateImage(
               "bacon",
-              "BACON NA BRASA: Dois burgers de 100 g, cheddar duplo, bacon crocante, cebola caramelizada e barbecue.",
+              "bacon na brasa: Dois burgers de 100 g, cheddar duplo, bacon crocante, cebola caramelizada e barbecue.",
             ),
             badge: "Para quem ama bacon",
             allergens: "Contém glúten, leite e ovos.",
@@ -166,10 +166,13 @@ export const brasaBurgerDefaultDocument: HamburgueriaPrototypeDocument =
             description:
               "Dois burgers de 100 g, cheddar, bacon, alface, tomate, cebola roxa e molho especial.",
             priceCents: 3490,
-            image: templateImage(
-              "hero",
-              "BRASA DUPLO: Dois burgers de 100 g, cheddar, bacon, alface, tomate, cebola roxa e molho especial.",
-            ),
+            image: {
+              ...templateImage(
+                "hero",
+                "brasa duplo: Dois burgers de 100 g, cheddar, bacon, alface, tomate, cebola roxa e molho especial.",
+              ),
+              focalPoint: { x: 78, y: 50 },
+            },
             allergens: "Contém glúten, leite e ovos.",
           },
           {
@@ -181,7 +184,7 @@ export const brasaBurgerDefaultDocument: HamburgueriaPrototypeDocument =
             priceCents: 2990,
             image: templateImage(
               "veggie",
-              "VERDE BRASA: Burger de grão-de-bico, abacate, alface, tomate, cebola roxa e maionese de ervas.",
+              "verde brasa: Burger de grão-de-bico, abacate, alface, tomate, cebola roxa e maionese de ervas.",
             ),
             badge: "Vegetariano",
             vegetarian: true,
@@ -196,7 +199,7 @@ export const brasaBurgerDefaultDocument: HamburgueriaPrototypeDocument =
             priceCents: 3990,
             image: templateImage(
               "classic",
-              "COMBO CLÁSSICO: Brasa Clássico + fritas 100 g + refrigerante lata 350 ml. O trio que não tem erro.",
+              "combo clássico: Brasa Clássico + fritas 100 g + refrigerante lata 350 ml. O trio que não tem erro.",
             ),
             badge: "O combo da casa",
             allergens: "Contém glúten, leite e ovos.",
@@ -210,7 +213,7 @@ export const brasaBurgerDefaultDocument: HamburgueriaPrototypeDocument =
             priceCents: 4890,
             image: templateImage(
               "bacon",
-              "COMBO BACON: Bacon na Brasa + fritas 100 g + refrigerante lata 350 ml. Para uma fome de respeito.",
+              "combo bacon: Bacon na Brasa + fritas 100 g + refrigerante lata 350 ml. Para uma fome de respeito.",
             ),
             allergens: "Contém glúten, leite e ovos.",
           },
@@ -223,7 +226,7 @@ export const brasaBurgerDefaultDocument: HamburgueriaPrototypeDocument =
             priceCents: 7490,
             image: templateImage(
               "classic",
-              "COMBO DA DUPLA: Dois Brasas Clássicos + fritas 200 g + dois refrigerantes 350 ml. Melhor com companhia.",
+              "combo da dupla: Dois Brasas Clássicos + fritas 200 g + dois refrigerantes 350 ml. Melhor com companhia.",
             ),
             badge: "Serve 2 pessoas",
             allergens: "Contém glúten, leite e ovos.",
@@ -315,6 +318,7 @@ export const brasaBurgerDefaultDocument: HamburgueriaPrototypeDocument =
           { id: "molho-extra", name: "Molho da casa 30 g", priceCents: 250 },
         ],
         vegetarianNote: "Tem opção vegetariana, sim.",
+        vegetarianLabel: "Vegetariano",
         customizationNote:
           "Quer tirar algum ingrediente? É só avisar no atendimento.",
         orderButtonLabel: "Pedir",
@@ -350,8 +354,6 @@ export const brasaBurgerDefaultDocument: HamburgueriaPrototypeDocument =
             "bacon",
             "Burger de bacon e cheddar para acompanhar uma porção de fritas",
           ),
-          imageAlt:
-            "Burger de bacon e cheddar para acompanhar uma porção de fritas",
           eyebrow: "Sua fome merece o combo.",
           headline: ["BURGER.", "FRITAS.", "FELICIDADE."],
           description: [
@@ -398,11 +400,12 @@ export const brasaBurgerDefaultDocument: HamburgueriaPrototypeDocument =
         title: "É BOM. MAS PODE PERGUNTAR.",
         rating: 4.9,
         count: 800,
-        starsLabel: "5 estrelas",
-        countLabel: "avaliações",
+        starsLabel: "{rating} de 5 estrelas",
+        countLabel: "Mais de {count} avaliações",
         entries: [
           {
             id: "marina-costa",
+            rating: 5,
             initials: "MC",
             name: "Marina Costa",
             role: "Time do delivery",
@@ -411,6 +414,7 @@ export const brasaBurgerDefaultDocument: HamburgueriaPrototypeDocument =
           },
           {
             id: "rafael-lima",
+            rating: 5,
             initials: "RL",
             name: "Rafael Lima",
             role: "Cliente da casa",
@@ -419,6 +423,7 @@ export const brasaBurgerDefaultDocument: HamburgueriaPrototypeDocument =
           },
           {
             id: "beatriz-santos",
+            rating: 5,
             initials: "BS",
             name: "Beatriz Santos",
             role: "Fã do Verde Brasa",
@@ -442,7 +447,8 @@ export const brasaBurgerDefaultDocument: HamburgueriaPrototypeDocument =
         mapRoad: "Rua das Brasas",
         mapAvenue: "Av. do Sabor",
         mapPlaceTagline: "Seu próximo lugar favorito.",
-        mapLinkLabel: "Ver São Paulo no mapa",
+        mapAccessibleLabel: "Mapa ilustrativo de {businessName}",
+        mapLinkLabel: "Ver {city} no mapa",
         mapCaption: "Localização ilustrativa",
         orderLinkLabel: "Pedir pelo WhatsApp",
         socialLinkPrefix: "Instagram",
@@ -525,14 +531,19 @@ export const brasaBurgerDefaultDocument: HamburgueriaPrototypeDocument =
           "Esta é uma hamburgueria fictícia. Os pratos e preços são ilustrativos, e não recebemos pedidos. Em uma loja real, você falaria com a equipe pelo WhatsApp.",
         socialDialogTitle: "UMA CASA FICTÍCIA",
         socialDialogMessage:
-          "A Brasa Burger é uma marca criada para esta demonstração e ainda não possui um perfil nas redes sociais.",
+          "A {businessName} é uma marca criada para esta demonstração e ainda não possui um perfil nas redes sociais.",
         reviewDisclaimer:
           "*Avaliações e depoimentos ilustrativos, criados para esta hamburgueria fictícia.",
         locationDisclaimer:
-          "Endereço fictício · o mapa abre a cidade de São Paulo",
+          "Endereço fictício · o mapa abre a cidade de {city}",
         contactDisclaimer: "Canal ilustrativo · marca fictícia",
         footerDisclaimer:
           "Projeto demonstrativo. Dados fictícios e imagens geradas por IA.",
+      },
+      interactions: {
+        orderMessage: "Olá, {businessName}! Gostaria de fazer um pedido.",
+        productOrderMessage:
+          "Olá, {businessName}! Gostaria de pedir {productName} ({price}).",
       },
     },
   });

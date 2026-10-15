@@ -3,6 +3,7 @@ import { Barlow, Barlow_Condensed, Caveat } from "next/font/google";
 import "./hamburgueria.css";
 import type { HamburgueriaPrototypeDocument } from "./schema/hamburgueria.schema";
 import { HamburgueriaDocumentProvider } from "./components/document-provider";
+import type { ResolvedUploadImages } from "./lib/images";
 
 const bodyFont = Barlow({
   subsets: ["latin"],
@@ -28,16 +29,19 @@ const handFont = Caveat({
 interface HamburgueriaTemplateProps {
   children: ReactNode;
   document: HamburgueriaPrototypeDocument;
+  uploads?: ResolvedUploadImages;
 }
 
 export function HamburgueriaTemplate({
   children,
   document,
+  uploads,
 }: HamburgueriaTemplateProps) {
   const { colors, fonts } = document.appearance;
   const fontFamilies = {
     barlow: "var(--font-hamburgueria-body), Arial, sans-serif",
-    "barlow-condensed": 'var(--font-hamburgueria-display), Impact, "Arial Narrow", sans-serif',
+    "barlow-condensed":
+      'var(--font-hamburgueria-display), Impact, "Arial Narrow", sans-serif',
     caveat: "var(--font-hamburgueria-hand), cursive",
   };
   const style = {
@@ -54,7 +58,7 @@ export function HamburgueriaTemplate({
       className={`hamburgueria-template ${bodyFont.variable} ${displayFont.variable} ${handFont.variable}`}
       style={style}
     >
-      <HamburgueriaDocumentProvider document={document}>
+      <HamburgueriaDocumentProvider document={document} uploads={uploads}>
         {children}
       </HamburgueriaDocumentProvider>
     </div>

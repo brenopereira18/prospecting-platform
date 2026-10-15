@@ -173,6 +173,7 @@ const hamburgueriaContentSchema = z.strictObject({
       )
       .max(40),
     vegetarianNote: prototypeTextSchema(180),
+    vegetarianLabel: prototypeTextSchema(60),
     customizationNote: prototypeTextSchema(180),
     orderButtonLabel: prototypeTextSchema(40),
   }),
@@ -208,7 +209,6 @@ const hamburgueriaContentSchema = z.strictObject({
     featured: z.strictObject({
       productId: prototypeIdSchema,
       image: templateImageSchema,
-      imageAlt: prototypeTextSchema(300),
       eyebrow: prototypeTextSchema(120),
       headline: z.tuple([
         prototypeTextSchema(40),
@@ -275,6 +275,7 @@ const hamburgueriaContentSchema = z.strictObject({
     mapRoad: prototypeTextSchema(120),
     mapAvenue: prototypeTextSchema(120),
     mapPlaceTagline: prototypeTextSchema(120),
+    mapAccessibleLabel: prototypeTextSchema(160),
     mapLinkLabel: prototypeTextSchema(80),
     mapCaption: prototypeTextSchema(100),
     orderLinkLabel: prototypeTextSchema(80),
@@ -332,6 +333,10 @@ const hamburgueriaContentSchema = z.strictObject({
     locationDisclaimer: prototypeTextSchema(200),
     contactDisclaimer: prototypeTextSchema(160),
     footerDisclaimer: prototypeTextSchema(300),
+  }),
+  interactions: z.strictObject({
+    orderMessage: prototypeTextSchema(500),
+    productOrderMessage: prototypeTextSchema(500),
   }),
 });
 

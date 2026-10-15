@@ -5,7 +5,8 @@ import { HamburgueriaRenderer } from "../../../components/prototypes/templates/h
 import { brasaBurgerDefaultDocument } from "../../../components/prototypes/templates/hamburgueria/data/default-document";
 
 export const metadata: Metadata = {
-  title: "Brasa Burger — Prévia do template",
+  title: brasaBurgerDefaultDocument.seo.title,
+  description: brasaBurgerDefaultDocument.seo.description,
   robots: { index: false, follow: false },
   icons: { icon: favicon.src },
 };

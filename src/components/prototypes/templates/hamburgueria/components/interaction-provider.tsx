@@ -7,14 +7,14 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { MenuCategory } from "../types/restaurant";
 import { Icon } from "./icons";
 import { useHamburgueriaDocument } from "./document-provider";
+import { formatCopy } from "../lib/format";
 
 type DemoKind = "order" | "social";
 interface Interactions {
-  category: MenuCategory;
-  setCategory: (category: MenuCategory) => void;
+  category: string | undefined;
+  setCategory: (category: string) => void;
   showDemo: (kind: DemoKind) => void;
 }
 const Context = createContext<Interactions | null>(null);
@@ -29,8 +29,16 @@ export function useInteractions() {
 }
 
 export function InteractionProvider({ children }: { children: ReactNode }) {
-  const { content } = useHamburgueriaDocument();
-  const [category, setCategory] = useState<MenuCategory>("burgers");
+  const { content, business } = useHamburgueriaDocument();
+  const { categories, defaultCategoryId } = content.menu;
+  const [selectedCategory, setSelectedCategory] = useState<string>();
+  const category = categories.some((item) => item.id === selectedCategory)
+    ? selectedCategory
+    : (categories.find((item) => item.id === defaultCategoryId)?.id ??
+      categories[0]?.id);
+  function setCategory(id: string) {
+    if (categories.some((item) => item.id === id)) setSelectedCategory(id);
+  }
   const [demoKind, setDemoKind] = useState<DemoKind>("order");
   const dialog = useRef<HTMLDialogElement>(null);
 
@@ -72,12 +80,18 @@ export function InteractionProvider({ children }: { children: ReactNode }) {
         </button>
         <Icon name="burger" />
         <h2 id="contact-dialog-title">
-          {demoKind === "social" ? content.demoCopy.socialDialogTitle : content.demoCopy.orderDialogTitle}
+          {demoKind === "social"
+            ? content.demoCopy.socialDialogTitle
+            : content.demoCopy.orderDialogTitle}
         </h2>
         <p>
           {demoKind === "social"
-            ? content.demoCopy.socialDialogMessage
-            : content.demoCopy.orderDialogMessage}
+            ? formatCopy(content.demoCopy.socialDialogMessage, {
+                businessName: business.name,
+              })
+            : formatCopy(content.demoCopy.orderDialogMessage, {
+                businessName: business.name,
+              })}
         </p>
         <button
           className={
