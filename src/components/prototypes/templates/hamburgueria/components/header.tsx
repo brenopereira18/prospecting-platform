@@ -2,13 +2,14 @@
 
 import { tw } from "../styles/tailwind";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Icon } from "./icons";
 import { useHamburgueriaDocument } from "./document-provider";
 import { SectionLink } from "./section-link";
 import { sectionAnchors } from "../lib/navigation";
 
 export function Header() {
+  const header = useRef<HTMLElement>(null);
   const { business, content, sections } = useHamburgueriaDocument();
   const navigation = content.header.navigation
     .filter(({ target }) => sections[target])
@@ -19,16 +20,18 @@ export function Header() {
     ? active
     : navigation[0]?.[0];
   useEffect(() => {
-    if (!open) return;
+    const ownerDocument = header.current?.ownerDocument;
+    if (!open || !ownerDocument) return;
     const close = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOpen(false);
     };
-    document.addEventListener("keydown", close);
-    return () => document.removeEventListener("keydown", close);
+    ownerDocument.addEventListener("keydown", close);
+    return () => ownerDocument.removeEventListener("keydown", close);
   }, [open]);
 
   return (
     <header
+      ref={header}
       className={
         "header [background:var(--black)] [color:white] relative [z-index:20]"
       }
