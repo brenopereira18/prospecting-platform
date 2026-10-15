@@ -1,6 +1,8 @@
 import type { CSSProperties, ReactNode } from "react";
 import { Barlow, Barlow_Condensed, Caveat } from "next/font/google";
 import "./hamburgueria.css";
+import type { HamburgueriaPrototypeDocument } from "./schema/hamburgueria.schema";
+import { HamburgueriaDocumentProvider } from "./components/document-provider";
 
 const bodyFont = Barlow({
   subsets: ["latin"],
@@ -25,21 +27,26 @@ const handFont = Caveat({
 
 interface HamburgueriaTemplateProps {
   children: ReactNode;
-  primaryColor?: string;
-  secondaryColor?: string;
-  tertiaryColor?: string;
+  document: HamburgueriaPrototypeDocument;
 }
 
 export function HamburgueriaTemplate({
   children,
-  primaryColor = "#f5bb16",
-  secondaryColor = "#141413",
-  tertiaryColor = "#f6f3ec",
+  document,
 }: HamburgueriaTemplateProps) {
+  const { colors, fonts } = document.appearance;
+  const fontFamilies = {
+    barlow: "var(--font-hamburgueria-body), Arial, sans-serif",
+    "barlow-condensed": 'var(--font-hamburgueria-display), Impact, "Arial Narrow", sans-serif',
+    caveat: "var(--font-hamburgueria-hand), cursive",
+  };
   const style = {
-    "--template-primary": primaryColor,
-    "--template-secondary": secondaryColor,
-    "--template-tertiary": tertiaryColor,
+    "--template-primary": colors.primary,
+    "--template-secondary": colors.secondary,
+    "--template-tertiary": colors.tertiary,
+    "--body": fontFamilies[fonts.body],
+    "--display": fontFamilies[fonts.display],
+    "--hand": fontFamilies[fonts.hand],
   } as CSSProperties;
 
   return (
@@ -47,7 +54,9 @@ export function HamburgueriaTemplate({
       className={`hamburgueria-template ${bodyFont.variable} ${displayFont.variable} ${handFont.variable}`}
       style={style}
     >
-      {children}
+      <HamburgueriaDocumentProvider document={document}>
+        {children}
+      </HamburgueriaDocumentProvider>
     </div>
   );
 }

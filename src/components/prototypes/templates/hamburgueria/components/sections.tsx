@@ -1,3 +1,4 @@
+import { SectionLink } from "./section-link";
 import Image from "next/image";
 import { Fragment } from "react";
 import { restaurant } from "../data/restaurant";
@@ -66,7 +67,7 @@ export function Hero() {
               "hero-actions flex [gap:13px] [margin-top:29px] max-[700px]:[margin-top:23px] max-[700px]:[gap:9px] max-[700px]:[&_.button]:[font-size:16px] max-[700px]:[&_.button]:[padding:12px_16px] max-[700px]:[&_.button]:[min-height:47px] max-[700px]:[&_.button_svg]:[width:18px] max-[360px]:[&_.button]:[font-size:15px] max-[360px]:[&_.button]:[padding:12px] max-[360px]:[&_svg]:hidden"
             }
           >
-            <a
+            <SectionLink
               className={
                 "button inline-flex items-center justify-center gap-3 [min-height:49px] [padding:13px_23px] [border:1px_solid_transparent] rounded-[2px] [font-family:var(--display)] [font-size:18px] font-bold [line-height:1.2] [transition:background_0.18s,_color_0.18s,_transform_0.18s] [&:hover]:[transform:translateY(-2px)] [&_svg]:[width:21px] [&_svg]:[height:21px] button-yellow [background:var(--yellow)] [color:#17130a] [&:hover]:[background:#ffcc33]"
               }
@@ -76,8 +77,8 @@ export function Hero() {
               <svg>
                 <use href="#i-burger" />
               </svg>
-            </a>
-            <a
+            </SectionLink>
+            <SectionLink
               className={
                 "button inline-flex items-center justify-center gap-3 [min-height:49px] [padding:13px_23px] [border:1px_solid_transparent] rounded-[2px] [font-family:var(--display)] [font-size:18px] font-bold [line-height:1.2] [transition:background_0.18s,_color_0.18s,_transform_0.18s] [&:hover]:[transform:translateY(-2px)] [&_svg]:[width:21px] [&_svg]:[height:21px] button-outline [border-color:#ba901f] [color:var(--paper)] [background:transparent] [&:hover]:[background:#f5bb1614]"
               }
@@ -87,9 +88,9 @@ export function Hero() {
               <svg>
                 <use href="#i-pin" />
               </svg>
-            </a>
+            </SectionLink>
           </div>
-          <a
+          <SectionLink
             className={
               "hero-reviews flex items-center [gap:13px] [margin-top:27px] [font-size:13px] [&_strong]:[font-size:16px] [&_>_span:last-child]:[color:#d9d6cc] max-[700px]:[margin-top:22px] max-[700px]:[gap:10px] max-[700px]:[font-size:11px] max-[700px]:flex-wrap max-[700px]:[&_.stars]:[font-size:17px] max-[700px]:[&_.stars]:[letter-spacing:2px] max-[700px]:[&_strong]:[font-size:14px] max-[360px]:[&_>_span:last-child]:[font-size:10px]"
             }
@@ -108,7 +109,7 @@ export function Hero() {
               Mais de {restaurant.reviews.count} boas mordidas
               {restaurant.demo && "*"}
             </span>
-          </a>
+          </SectionLink>
           <p
             className={
               "hero-service flex items-center gap-2 [font-size:12px] [color:#bdb9ad] [margin-top:14px] [&_svg]:[width:15px] [&_svg]:[height:15px] [&_>_span]:[height:3px] [&_>_span]:[width:3px] [&_>_span]:[background:var(--yellow)] [&_>_span]:rounded-full [&_>_span]:[margin:0_3px] max-[700px]:[font-size:10px] max-[700px]:[margin-top:10px] max-[700px]:[gap:5px]"
@@ -151,6 +152,7 @@ export function Hero() {
 export function Qualities() {
   return (
     <section
+      id="qualidades"
       className={
         "qualities [background:#191918] [color:white] [border-top:1px_solid_#ffffff0a] [&_svg]:[height:39px] [&_svg]:[width:39px] [&_svg]:[color:var(--yellow)] [&_svg]:[stroke-width:1.25] [&_strong]:block [&_strong]:[font:600_20px_var(--display)] [&_strong]:whitespace-nowrap [&_span]:block [&_span]:[color:#bab8b0] [&_span]:[font-size:12px] [&_span]:[margin-top:4px] max-[1150px]:[&_strong]:[font-size:17px] max-[1150px]:[&_span]:[font-size:11px] max-[1150px]:[&_svg]:[width:31px] max-[900px]:[&_strong]:[font-size:21px] max-[900px]:[&_span]:[font-size:12px] max-[700px]:[&_svg]:[width:30px] max-[700px]:[&_svg]:[height:34px] max-[700px]:[&_strong]:[font-size:16px] max-[700px]:[&_strong]:[white-space:normal] max-[700px]:[&_strong]:[line-height:1.1] max-[700px]:[&_span]:[font-size:10px] max-[700px]:[&_span]:[line-height:1.5]"
       }
@@ -422,7 +424,7 @@ export function HowToOrder() {
             </svg>{" "}
             {restaurant.paymentMethods}
           </span>
-          <a
+          <SectionLink
             className={
               "text-link [border:0] [background:none] [padding:8px_0] inline-flex items-center gap-3 [font-size:15px] [font-weight:600] [&:hover]:[text-decoration:underline] [&_svg]:[width:20px]"
             }
@@ -432,7 +434,7 @@ export function HowToOrder() {
             <svg>
               <use href="#i-arrow" />
             </svg>
-          </a>
+          </SectionLink>
         </div>
       </div>
     </section>
@@ -834,6 +836,7 @@ export function Faq() {
 export function FinalCallToAction() {
   return (
     <section
+      id="chamada-final"
       className={
         "final-cta [padding:36px_0] [background:var(--yellow)] [&_>_.site-container]:flex [&_>_.site-container]:items-center [&_>_.site-container]:justify-between [&_>_.site-container]:[gap:20px] [&_.handwritten]:[color:#765209] [&_.handwritten]:[font-size:27px] [&_.handwritten]:[margin-bottom:2px] [&_h2]:[font-size:clamp(30px,_3.8vw,_49px)] [&_.button]:[min-width:210px] max-[700px]:[padding:31px_0] max-[700px]:[&_>_.site-container]:items-start max-[700px]:[&_>_.site-container]:flex-col max-[700px]:[&_>_.site-container]:[gap:22px] max-[700px]:[&_h2]:[font-size:39px] max-[700px]:[&_.button]:[min-width:0] max-[700px]:[&_.button]:w-full"
       }
@@ -853,7 +856,7 @@ export function FinalCallToAction() {
           </p>
           <h2>SÓ FALTA VOCÊ ESCOLHER.</h2>
         </div>
-        <a
+        <SectionLink
           className={
             "button inline-flex items-center justify-center gap-3 [min-height:49px] [padding:13px_23px] [border:1px_solid_transparent] rounded-[2px] [font-family:var(--display)] [font-size:18px] font-bold [line-height:1.2] [transition:background_0.18s,_color_0.18s,_transform_0.18s] [&:hover]:[transform:translateY(-2px)] [&_svg]:[width:21px] [&_svg]:[height:21px] button-dark [background:var(--ink)] [color:white] [&:hover]:[background:#302b20]"
           }
@@ -863,7 +866,7 @@ export function FinalCallToAction() {
           <svg>
             <use href="#i-burger" />
           </svg>
-        </a>
+        </SectionLink>
       </div>
     </section>
   );
@@ -877,11 +880,12 @@ export function Footer() {
           "site-container [width:min(1240px,_calc(100%_-_88px))] mx-auto max-[1150px]:[width:calc(100%_-_56px)] max-[700px]:[width:calc(100%_-_40px)] max-[360px]:[width:calc(100%_-_28px)] footer-main grid [grid-template-columns:1.1fr_1fr_1.25fr_1.15fr] [gap:30px] [padding-top:46px] [padding-bottom:38px] [&_>_.brand]:[align-self:start] [&_>_.brand]:[color:#fff] [&_h3]:[color:var(--yellow)] [&_h3]:[font-size:21px] [&_h3]:[margin-bottom:14px] [&_>_div_>_a:not(.button)]:block [&_>_div_>_p]:block [&_>_div_>_a:not(.button)]:[font-size:12px] [&_>_div_>_p]:[font-size:12px] [&_>_div_>_a:not(.button)]:[line-height:1.8] [&_>_div_>_p]:[line-height:1.8] [&_>_div_>_a:not(.button)]:[margin:5px_0] [&_>_div_>_p]:[margin:5px_0] [&_>_div_>_a:not(.button):hover]:[color:var(--yellow)] max-[1150px]:[gap:24px] max-[900px]:[grid-template-columns:1fr_1fr] max-[900px]:[gap:36px] max-[700px]:[grid-template-columns:1fr_1fr] max-[700px]:[gap:32px_20px] max-[700px]:[padding-top:36px] max-[700px]:[&_>_.brand]:[grid-column:1/-1] max-[700px]:[&_>_div:nth-child(2)]:[order:2] max-[700px]:[&_>_div:nth-child(3)]:[order:3]"
         }
       >
-        <a
+        <SectionLink
           className={
             "brand flex items-center gap-3 [flex-shrink:0] [&_>_span]:[font:800_29px/0.85_var(--display)] [&_>_span]:[letter-spacing:0.25px] [&_small]:block [&_small]:[font:500_11px_var(--body)] [&_small]:[letter-spacing:1.2px] [&_small]:[color:var(--yellow)] [&_small]:[margin-top:9px] max-[1150px]:[&_>_span]:[font-size:26px] max-[900px]:[&_>_span]:[font-size:24px] max-[700px]:[&_>_span]:[font-size:24px] max-[700px]:[&_small]:[font-size:8px] max-[700px]:[&_small]:[margin-top:7px]"
           }
           href="#inicio"
+          fallbackHref="#conteudo"
         >
           <svg
             className={
@@ -896,18 +900,18 @@ export function Footer() {
             {restaurant.brandLines[1]}
             <small>{restaurant.tagline}</small>
           </span>
-        </a>
+        </SectionLink>
         <div>
           <h3>Explore a casa</h3>
-          <a href="#cardapio">Cardápio</a>
-          <a href="#nossa-historia">Nossa história</a>
-          <a href="#onde-estamos">Onde estamos</a>
+          <SectionLink href="#cardapio">Cardápio</SectionLink>
+          <SectionLink href="#nossa-historia">Nossa história</SectionLink>
+          <SectionLink href="#onde-estamos">Onde estamos</SectionLink>
         </div>
         <div>
           <h3>Acenda a fome</h3>
           <p>Delivery, retirada e salão.</p>
           <p>Terça a domingo, a partir das 18h.</p>
-          <a href="#duvidas">Dúvidas frequentes</a>
+          <SectionLink href="#duvidas">Dúvidas frequentes</SectionLink>
         </div>
         <div
           className={
@@ -919,7 +923,7 @@ export function Footer() {
             <br />
             ao último guardanapo.
           </p>
-          <a
+          <SectionLink
             className={
               "button inline-flex items-center justify-center gap-3 [min-height:49px] [padding:13px_23px] [border:1px_solid_transparent] rounded-[2px] [font-family:var(--display)] [font-size:18px] font-bold [line-height:1.2] [transition:background_0.18s,_color_0.18s,_transform_0.18s] [&:hover]:[transform:translateY(-2px)] [&_svg]:[width:21px] [&_svg]:[height:21px] button-outline [border-color:#ba901f] [color:var(--paper)] [background:transparent] [&:hover]:[background:#f5bb1614]"
             }
@@ -929,7 +933,7 @@ export function Footer() {
             <svg>
               <use href="#i-arrow" />
             </svg>
-          </a>
+          </SectionLink>
         </div>
       </div>
       <div
@@ -943,7 +947,7 @@ export function Footer() {
             Projeto demonstrativo. Dados fictícios e imagens geradas por IA.
           </span>
         )}
-        <a href="#inicio">Voltar ao topo ↑</a>
+        <SectionLink href="#inicio" fallbackHref="#conteudo">Voltar ao topo ↑</SectionLink>
       </div>
     </footer>
   );

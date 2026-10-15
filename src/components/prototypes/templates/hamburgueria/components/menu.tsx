@@ -1,5 +1,7 @@
 "use client";
 
+import { SectionLink } from "./section-link";
+
 import { tw } from "../styles/tailwind";
 
 import Image from "next/image";
@@ -40,14 +42,14 @@ export function Menu() {
             </p>
             <h2 id="menu-title">OS FAVORITOS DA CASA</h2>
           </div>
-          <a
+          <SectionLink
             className={
               "text-link [border:0] [background:none] [padding:8px_0] inline-flex items-center gap-3 [font-size:15px] [font-weight:600] [&:hover]:[text-decoration:underline] [&_svg]:[width:20px]"
             }
             href="#como-pedir"
           >
             Como fazer seu pedido <Icon name="arrow" />
-          </a>
+          </SectionLink>
         </div>
         <div
           className={
