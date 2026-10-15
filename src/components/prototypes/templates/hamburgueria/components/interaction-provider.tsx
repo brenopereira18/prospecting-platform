@@ -8,8 +8,8 @@ import {
   type ReactNode,
 } from "react";
 import type { MenuCategory } from "../types/restaurant";
-import { restaurant } from "../data/restaurant";
 import { Icon } from "./icons";
+import { useHamburgueriaDocument } from "./document-provider";
 
 type DemoKind = "order" | "social";
 interface Interactions {
@@ -29,6 +29,7 @@ export function useInteractions() {
 }
 
 export function InteractionProvider({ children }: { children: ReactNode }) {
+  const { content } = useHamburgueriaDocument();
   const [category, setCategory] = useState<MenuCategory>("burgers");
   const [demoKind, setDemoKind] = useState<DemoKind>("order");
   const dialog = useRef<HTMLDialogElement>(null);
@@ -71,12 +72,12 @@ export function InteractionProvider({ children }: { children: ReactNode }) {
         </button>
         <Icon name="burger" />
         <h2 id="contact-dialog-title">
-          {demoKind === "social" ? "UMA CASA FICTÍCIA" : "DEU VONTADE, NÉ?"}
+          {demoKind === "social" ? content.demoCopy.socialDialogTitle : content.demoCopy.orderDialogTitle}
         </h2>
         <p>
           {demoKind === "social"
-            ? `A ${restaurant.name} é uma marca criada para esta demonstração e ainda não possui um perfil nas redes sociais.`
-            : "Esta é uma hamburgueria fictícia. Os pratos e preços são ilustrativos, e não recebemos pedidos. Em uma loja real, você falaria com a equipe pelo WhatsApp."}
+            ? content.demoCopy.socialDialogMessage
+            : content.demoCopy.orderDialogMessage}
         </p>
         <button
           className={
