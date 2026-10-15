@@ -10,6 +10,7 @@ import {
 } from "../schema/hamburgueria.schema";
 import { HamburgueriaDocumentProvider } from "./document-provider";
 import { formatPriceParts } from "../lib/format";
+import { createEditorDocument, editorDocumentReducer } from "../../../editor/hamburgueria/editor-document";
 
 // Node does not have Next's static-image loader. Load the actual bytes rather
 // than replacing the visual components, and retain the real image dimensions.
@@ -32,6 +33,18 @@ async function render(document: HamburgueriaPrototypeDocument) {
     </HamburgueriaDocumentProvider>,
   );
 }
+
+test("editor actions update the existing landing page and reset restores its content", async () => {
+  let document = editorDocumentReducer(createEditorDocument(), { type: "heroHeadline", index: 0, value: "TÍTULO DO EDITOR" });
+  document = editorDocumentReducer(document, { type: "section", field: "menu", value: false });
+  const edited = await render(document);
+  assert.match(edited, /TÍTULO DO EDITOR/);
+  assert.doesNotMatch(edited, /(?:id|href)="(?:#)?cardapio"/);
+  const restored = await render(editorDocumentReducer(document, { type: "reset" }));
+  assert.match(restored, /NA BRASA\./);
+  assert.match(restored, /id="cardapio"/);
+  assert.doesNotMatch(restored, /TÍTULO DO EDITOR/);
+});
 
 test("business name and hero headline follow the supplied document", async () => {
   const document = structuredClone(brasaBurgerDefaultDocument);
