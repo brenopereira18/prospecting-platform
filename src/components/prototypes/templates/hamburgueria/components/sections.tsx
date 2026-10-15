@@ -1,12 +1,22 @@
 import { SectionLink } from "./section-link";
-import Image from "next/image";
+import { TemplateImage } from "./template-image";
 import { Fragment } from "react";
-import { restaurant } from "../data/restaurant";
-import { formatPrice } from "../lib/format";
+import type { HamburgueriaPrototypeDocument } from "../schema/hamburgueria.schema";
+import { sectionAnchors } from "../lib/navigation";
+import { RatingStars } from "./rating-stars";
+import { formatCopy, formatPriceCents, formatPriceParts } from "../lib/format";
+
 import { OrderLink, SocialLink, ComboLink } from "./contact-links";
 import { Icon } from "./icons";
 
-export function Hero() {
+type SectionProps = { document: HamburgueriaPrototypeDocument };
+
+export function Hero({ document }: SectionProps) {
+  const {
+    content: { hero, reviews },
+    demo,
+    locale,
+  } = document;
   return (
     <section
       className={
@@ -15,12 +25,11 @@ export function Hero() {
       id="inicio"
       aria-labelledby="hero-title"
     >
-      <Image
+      <TemplateImage
         className={
           "hero-photo absolute [right:0] [top:-12%] w-full [height:116%] object-cover [object-position:center_51%] min-[1600px]:[object-position:center_55%] max-[1150px]:[width:115%] max-[1150px]:[max-width:none] max-[1150px]:[right:-12%] max-[1150px]:[object-position:center] max-[700px]:[top:auto] max-[700px]:[bottom:-27px] max-[700px]:[height:440px] max-[700px]:[width:140%] max-[700px]:[right:-11%] max-[700px]:[object-position:61%_55%]"
         }
-        src={restaurant.hero.image}
-        alt={restaurant.hero.imageAlt}
+        image={hero.image}
         fetchPriority="high"
         loading="eager"
         width="1536"
@@ -46,21 +55,21 @@ export function Hero() {
               "handwritten [font-family:var(--hand)] [font-size:29px] [line-height:1.3] [color:var(--yellow-dark)] [margin-bottom:7px] max-[700px]:[font-size:26px]"
             }
           >
-            {restaurant.hero.eyebrow}
+            {hero.eyebrow}
           </p>
           <h1 id="hero-title">
-            {restaurant.hero.headline[0]}
+            {hero.headline[0]}
             <br />
-            <span>{restaurant.hero.headline[1]}</span>
+            <span>{hero.headline[1]}</span>
           </h1>
           <p
             className={
               "hero-description [margin-top:27px] [color:#e4e1d8] [font-size:17px] [line-height:1.65] max-[1150px]:[font-size:16px] max-[900px]:[max-width:335px] max-[700px]:[max-width:360px] max-[700px]:[font-size:14px] max-[700px]:[margin-top:20px] max-[700px]:[line-height:1.7]"
             }
           >
-            {restaurant.hero.description[0]}
+            {hero.description[0]}
             <br className={"desktop-break max-[900px]:hidden"} />
-            {restaurant.hero.description[1]}
+            {hero.description[1]}
           </p>
           <div
             className={
@@ -73,7 +82,7 @@ export function Hero() {
               }
               href="#cardapio"
             >
-              Ver cardápio e pedir{" "}
+              {hero.primaryCtaLabel}{" "}
               <svg>
                 <use href="#i-burger" />
               </svg>
@@ -84,7 +93,7 @@ export function Hero() {
               }
               href="#onde-estamos"
             >
-              Conhecer a casa{" "}
+              {hero.secondaryCtaLabel}{" "}
               <svg>
                 <use href="#i-pin" />
               </svg>
@@ -96,18 +105,20 @@ export function Hero() {
             }
             href="#avaliacoes"
           >
-            <span
+            <RatingStars
               className={
                 "stars [color:var(--yellow)] [letter-spacing:3px] whitespace-nowrap [font-size:20px] [line-height:1]"
               }
-              aria-label="5 estrelas"
-            >
-              ★★★★★
-            </span>
-            <strong>{restaurant.reviews.rating.toLocaleString("pt-BR")}</strong>
+              rating={reviews.rating}
+              label={hero.reviewStarsLabel}
+              locale={locale}
+            />
+            <strong>{reviews.rating.toLocaleString(locale)}</strong>
             <span>
-              Mais de {restaurant.reviews.count} boas mordidas
-              {restaurant.demo && "*"}
+              {formatCopy(hero.reviewCountLabel, {
+                count: reviews.count.toLocaleString(locale),
+              })}
+              {demo.enabled && "*"}
             </span>
           </SectionLink>
           <p
@@ -118,20 +129,20 @@ export function Hero() {
             <svg>
               <use href="#i-clock" />
             </svg>{" "}
-            {restaurant.hero.hours} <span></span> {restaurant.hero.service}
+            {hero.hoursSummary} <span></span> {hero.serviceSummary}
           </p>
         </div>
         <div
           className={
             "hero-stamp absolute [right:0] [bottom:35px] [width:136px] [height:136px] [background:#111110ec] [border:2px_solid_#b88c16] rounded-full [color:var(--yellow)] flex flex-col items-center justify-center [transform:rotate(-11deg)] [outline:1px_solid_#7f6218] [outline-offset:-8px] [box-shadow:0_5px_25px_#0007] [&_span]:[font:600_23px_var(--display)] [&_strong]:[font:700_24px/1_var(--display)] [&_strong]:[text-align:center] [&_svg]:[height:24px] [&_svg]:[margin-top:5px] max-[900px]:[width:115px] max-[900px]:[height:115px] max-[900px]:[right:-8px] max-[900px]:[&_strong]:[font-size:21px] max-[900px]:[&_span]:[font-size:21px] max-[700px]:[bottom:26px] max-[700px]:[right:2px] max-[700px]:[width:104px] max-[700px]:[height:104px] max-[700px]:[background:#111110ec] max-[700px]:[&_strong]:[font-size:19px] max-[700px]:[&_span]:[font-size:18px] max-[700px]:[&_svg]:[height:20px]"
           }
-          aria-label="100% feito na brasa"
+          aria-label={[hero.badgeText, ...hero.badgeLines].join(" ")}
         >
-          <span>100%</span>
+          <span>{hero.badgeText}</span>
           <strong>
-            FEITO
+            {hero.badgeLines[0]}
             <br />
-            NA BRASA
+            {hero.badgeLines[1]}
           </strong>
           <svg>
             <use href="#i-fire" />
@@ -143,68 +154,56 @@ export function Hero() {
           "hero-bottom absolute [bottom:16px] [right:calc((100%_-_min(1240px,_100%_-_88px))_/_2_+_166px)] [font-family:var(--hand)] [font-size:20px] [color:#d9c693] [transform:rotate(-3deg)] max-[1150px]:hidden"
         }
       >
-        Feito na hora. Do nosso jeito. Pra sua fome.
+        {hero.bottomNote}
       </div>
     </section>
   );
 }
 
-export function Qualities() {
+export function Qualities({ document }: SectionProps) {
+  const {
+    content: { qualities },
+  } = document;
   return (
     <section
       id="qualidades"
       className={
         "qualities [background:#191918] [color:white] [border-top:1px_solid_#ffffff0a] [&_svg]:[height:39px] [&_svg]:[width:39px] [&_svg]:[color:var(--yellow)] [&_svg]:[stroke-width:1.25] [&_strong]:block [&_strong]:[font:600_20px_var(--display)] [&_strong]:whitespace-nowrap [&_span]:block [&_span]:[color:#bab8b0] [&_span]:[font-size:12px] [&_span]:[margin-top:4px] max-[1150px]:[&_strong]:[font-size:17px] max-[1150px]:[&_span]:[font-size:11px] max-[1150px]:[&_svg]:[width:31px] max-[900px]:[&_strong]:[font-size:21px] max-[900px]:[&_span]:[font-size:12px] max-[700px]:[&_svg]:[width:30px] max-[700px]:[&_svg]:[height:34px] max-[700px]:[&_strong]:[font-size:16px] max-[700px]:[&_strong]:[white-space:normal] max-[700px]:[&_strong]:[line-height:1.1] max-[700px]:[&_span]:[font-size:10px] max-[700px]:[&_span]:[line-height:1.5]"
       }
-      aria-label="O jeito Brasa de fazer"
+      aria-label={qualities.accessibleLabel}
     >
       <div
         className={
           "site-container [width:min(1240px,_calc(100%_-_88px))] mx-auto max-[1150px]:[width:calc(100%_-_56px)] max-[700px]:[width:calc(100%_-_40px)] max-[360px]:[width:calc(100%_-_28px)] qualities-grid grid [grid-template-columns:repeat(4,_1fr)] [padding:29px_0] [&_>_div]:flex [&_>_div]:items-center [&_>_div]:[gap:15px] [&_>_div]:[padding:0_24px] [&_>_div]:[border-right:1px_solid_#ffffff25] [&_>_div:first-child]:[padding-left:0] [&_>_div:last-child]:[border:0] [&_>_div:last-child]:[padding-right:0] max-[1150px]:[&_>_div]:[padding:0_16px] max-[1150px]:[&_>_div]:[gap:10px] max-[900px]:[grid-template-columns:1fr_1fr] max-[900px]:[gap:22px] max-[900px]:[padding:25px_0] max-[900px]:[&_>_div:nth-child(2)]:[border:0] max-[700px]:[gap:23px_12px] max-[700px]:[padding:26px_0] max-[700px]:[&_>_div]:[gap:9px]"
         }
       >
-        <div>
-          <svg>
-            <use href="#i-fire" />
-          </svg>
-          <p>
-            <strong>Brasa de verdade</strong>
-            <span>Carne fresca, sabor de fogo.</span>
-          </p>
-        </div>
-        <div>
-          <svg>
-            <use href="#i-fries" />
-          </svg>
-          <p>
-            <strong>Crocância no ponto</strong>
-            <span>Batata sequinha a cada pedido.</span>
-          </p>
-        </div>
-        <div>
-          <svg>
-            <use href="#i-burger" />
-          </svg>
-          <p>
-            <strong>Feito na hora</strong>
-            <span>Da chapa direto para você.</span>
-          </p>
-        </div>
-        <div>
-          <svg>
-            <use href="#i-leaf" />
-          </svg>
-          <p>
-            <strong>Capricho do início ao fim</strong>
-            <span>Ingredientes escolhidos a dedo.</span>
-          </p>
-        </div>
+        {qualities.items.map((item) => (
+          <div key={item.id}>
+            <Icon name={item.icon} />
+            <p>
+              <strong>{item.title}</strong>
+              <span>{item.description}</span>
+            </p>
+          </div>
+        ))}
       </div>
     </section>
   );
 }
 
-export function Story() {
+export function Story({ document }: SectionProps) {
+  const {
+    content: { story, menu },
+    locale,
+    currency,
+  } = document;
+  const featured = story.featured;
+  const featuredProduct = menu.products.find(
+    (product) => product.id === featured.productId,
+  );
+  const priceParts = featuredProduct
+    ? formatPriceParts(featuredProduct.priceCents, locale, currency)
+    : null;
   return (
     <section
       className={
@@ -214,12 +213,11 @@ export function Story() {
     >
       <div
         className={
-          "combo-panel [background:#0c0c0b] relative overflow-hidden [color:white] [min-height:510px] [&_>_img]:absolute [&_>_img]:[inset:0] [&_>_img]:w-full [&_>_img]:h-full [&_>_img]:object-cover [&_>_img]:[object-position:25%_60%] max-[700px]:[min-height:485px] max-[700px]:[&_>_img]:[object-position:20%_60%] max-[700px]:[&_>_img]:w-full"
+          "combo-panel [background:#0c0c0b] relative overflow-hidden [color:white] [min-height:510px] [&_>_.template-image]:absolute [&_>_.template-image]:[inset:0] [&_>_.template-image]:w-full [&_>_.template-image]:h-full [&_>_.template-image]:object-cover [&_>_.template-image]:[object-position:25%_60%] max-[700px]:[min-height:485px] max-[700px]:[&_>_.template-image]:[object-position:20%_60%] max-[700px]:[&_>_.template-image]:w-full"
         }
       >
-        <Image
-          src={restaurant.featuredCombo.image}
-          alt={restaurant.featuredCombo.imageAlt}
+        <TemplateImage
+          image={featured.image}
           loading="lazy"
           width="1024"
           height="1024"
@@ -239,39 +237,40 @@ export function Story() {
               "handwritten [font-family:var(--hand)] [font-size:29px] [line-height:1.3] [color:var(--yellow-dark)] [margin-bottom:7px] max-[700px]:[font-size:26px]"
             }
           >
-            Sua fome merece o combo.
+            {featured.eyebrow}
           </p>
           <h2>
-            BURGER.
+            {featured.headline[0]}
             <br />
-            FRITAS.
+            {featured.headline[1]}
             <br />
-            FELICIDADE.
+            {featured.headline[2]}
           </h2>
           <p>
-            {restaurant.featuredCombo.description[0]}
+            {featured.description[0]}
             <br />
-            {restaurant.featuredCombo.description[1]}
+            {featured.description[1]}
           </p>
-          <div
-            className={
-              "combo-price flex flex-col [margin:16px_0_20px] [&_small]:[font-size:12px] [&_small]:[color:#c6c0ae] [&_strong]:[font:700_49px/1_var(--display)] [&_strong]:[color:var(--yellow)] [&_strong_span]:[font-size:30px]"
-            }
-          >
-            <small>O trio por</small>
-            <strong>
-              R$ {Math.trunc(restaurant.featuredCombo.price)}
-              <span>
-                ,{restaurant.featuredCombo.price.toFixed(2).split(".")[1]}
-              </span>
-            </strong>
-          </div>
+          {featuredProduct && priceParts && (
+            <div
+              className={
+                "combo-price flex flex-col [margin:16px_0_20px] [&_small]:[font-size:12px] [&_small]:[color:#c6c0ae] [&_strong]:[font:700_49px/1_var(--display)] [&_strong]:[color:var(--yellow)] [&_strong_span]:[font-size:30px]"
+              }
+            >
+              <small>{featured.priceLabel}</small>
+              <strong>
+                {priceParts.main}
+                <span>{priceParts.fraction}</span>
+                {priceParts.suffix}
+              </strong>
+            </div>
+          )}
           <ComboLink
             className={
               "button inline-flex items-center justify-center gap-3 [min-height:49px] [padding:13px_23px] [border:1px_solid_transparent] rounded-[2px] [font-family:var(--display)] [font-size:18px] font-bold [line-height:1.2] [transition:background_0.18s,_color_0.18s,_transform_0.18s] [&:hover]:[transform:translateY(-2px)] [&_svg]:[width:21px] [&_svg]:[height:21px] button-yellow [background:var(--yellow)] [color:#17130a] [&:hover]:[background:#ffcc33]"
             }
           >
-            Conhecer os combos{" "}
+            {featured.ctaLabel}{" "}
             <svg>
               <use href="#i-arrow" />
             </svg>
@@ -288,15 +287,16 @@ export function Story() {
             "handwritten [font-family:var(--hand)] [font-size:29px] [line-height:1.3] [color:var(--yellow-dark)] [margin-bottom:7px] max-[700px]:[font-size:26px]"
           }
         >
-          Nossa casa, nossa essência
+          {story.eyebrow}
         </p>
         <h2>
-          A GENTE LEVA
+          {story.headline[0]}
           <br />
-          HAMBÚRGUER
-          <br />A SÉRIO.
+          {story.headline[1]}
+          <br />
+          {story.headline[2]}
         </h2>
-        {restaurant.story.map((paragraph) => (
+        {story.paragraphs.map((paragraph) => (
           <p key={paragraph}>{paragraph}</p>
         ))}
         <div
@@ -308,9 +308,9 @@ export function Story() {
             <use href="#i-fire" />
           </svg>
           <span>
-            Fogo no preparo.
+            {story.signature[0]}
             <br />
-            <strong>Carinho em cada pedido.</strong>
+            <strong>{story.signature[1]}</strong>
           </span>
         </div>
       </div>
@@ -318,7 +318,12 @@ export function Story() {
   );
 }
 
-export function HowToOrder() {
+export function HowToOrder({ document }: SectionProps) {
+  const {
+    content: { howToOrder, service },
+    locale,
+    currency,
+  } = document;
   return (
     <section
       className={
@@ -342,9 +347,9 @@ export function HowToOrder() {
                 "handwritten [font-family:var(--hand)] [font-size:29px] [line-height:1.3] [color:var(--yellow-dark)] [margin-bottom:7px] max-[700px]:[font-size:26px]"
               }
             >
-              Da nossa chapa para você
+              {howToOrder.eyebrow}
             </p>
-            <h2>CHEGOU A HORA DE MATAR A FOME.</h2>
+            <h2>{howToOrder.title}</h2>
           </div>
         </div>
         <div
@@ -352,77 +357,58 @@ export function HowToOrder() {
             "steps grid [grid-template-columns:repeat(3,_1fr)] [gap:40px] [margin-top:38px] [&_article]:flex [&_article]:items-start [&_article]:[gap:19px] [&_h3]:[font-size:26px] [&_h3]:[margin-bottom:12px] [&_p]:[color:var(--muted)] [&_p]:[font-size:14px] [&_p]:[line-height:1.7] [&_p]:[max-width:290px] max-[1150px]:[gap:25px] max-[1150px]:[&_h3]:[font-size:23px] max-[900px]:[gap:25px] max-[900px]:[&_article]:block max-[900px]:[&_h3]:[font-size:25px] max-[700px]:[grid-template-columns:1fr] max-[700px]:[gap:29px] max-[700px]:[margin-top:30px] max-[700px]:[&_article]:flex max-[700px]:[&_article]:[gap:20px] max-[700px]:[&_h3]:[font-size:27px] max-[700px]:[&_p]:max-w-full max-[700px]:[&_p]:[font-size:14px]"
           }
         >
-          <article>
-            <span
-              className={
-                "step-number [font:700_52px/0.9_var(--display)] [color:#c69311] max-[900px]:block max-[900px]:[margin-bottom:18px] max-[700px]:[font-size:49px] max-[700px]:[margin:0]"
-              }
-            >
-              01
-            </span>
-            <div>
-              <h3>Escolha seus favoritos</h3>
-              <p>
-                Explore os burgers, acompanhamentos e bebidas do cardápio. Já
-                sabe qual vai ser?
-              </p>
-            </div>
-          </article>
-          <article>
-            <span
-              className={
-                "step-number [font:700_52px/0.9_var(--display)] [color:#c69311] max-[900px]:block max-[900px]:[margin-bottom:18px] max-[700px]:[font-size:49px] max-[700px]:[margin:0]"
-              }
-            >
-              02
-            </span>
-            <div>
-              <h3>Fale com a nossa equipe</h3>
-              <p>
-                Peça pelo WhatsApp ou direto no balcão. Conte como você gosta e
-                a gente capricha.
-              </p>
-            </div>
-          </article>
-          <article>
-            <span
-              className={
-                "step-number [font:700_52px/0.9_var(--display)] [color:#c69311] max-[900px]:block max-[900px]:[margin-bottom:18px] max-[700px]:[font-size:49px] max-[700px]:[margin:0]"
-              }
-            >
-              03
-            </span>
-            <div>
-              <h3>Pronto para a primeira mordida</h3>
-              <p>
-                Entregamos em {restaurant.delivery.estimate}. Prefere buscar? A
-                retirada fica pronta em {restaurant.delivery.pickupEstimate}.
-              </p>
-            </div>
-          </article>
+          {howToOrder.steps.map((step, index) => (
+            <article key={step.id}>
+              <span
+                className={
+                  "step-number [font:700_52px/0.9_var(--display)] [color:#c69311] max-[900px]:block max-[900px]:[margin-bottom:18px] max-[700px]:[font-size:49px] max-[700px]:[margin:0]"
+                }
+              >
+                {String(index + 1).padStart(2, "0")}
+              </span>
+              <div>
+                <h3>{step.title}</h3>
+                <p>
+                  {formatCopy(step.body, {
+                    deliveryEstimate: service.delivery.estimate,
+                    pickupEstimate: service.delivery.pickupEstimate,
+                  })}
+                </p>
+              </div>
+            </article>
+          ))}
         </div>
         <div
           className={
             "delivery-strip flex justify-between items-center [gap:15px] [border-top:1px_solid_var(--line)] [padding-top:24px] [margin-top:42px] [font-size:13px] [&_>_span]:flex [&_>_span]:[gap:9px] [&_>_span]:items-center [&_svg]:[color:#a2740c] [&_svg]:[width:23px] [&_>_.text-link]:[font-size:13px] max-[900px]:flex-wrap max-[900px]:justify-start max-[900px]:[gap:16px_27px] max-[700px]:[margin-top:28px] max-[700px]:[padding-top:22px] max-[700px]:grid max-[700px]:[grid-template-columns:1fr_1fr] max-[700px]:[gap:18px_10px] max-[700px]:[font-size:11px] max-[700px]:[&_>_span]:items-start max-[700px]:[&_>_span]:[gap:6px] max-[700px]:[&_svg]:[width:19px] max-[700px]:[&_svg]:[height:19px] max-[700px]:[&_.text-link]:[padding:0] max-[700px]:[&_.text-link]:[font-size:11px] max-[700px]:[&_.text-link]:[gap:5px] max-[360px]:[grid-template-columns:1fr]"
           }
         >
-          <span>
-            <svg>
-              <use href="#i-truck" />
-            </svg>{" "}
-            Entrega a partir de {formatPrice(restaurant.delivery.minimumFee)}
-          </span>
-          <span>
-            <svg>
-              <use href="#i-bag" />
-            </svg>{" "}
-            Retirada sem taxa
-          </span>
+          {service.modes.delivery && (
+            <span>
+              <svg>
+                <use href="#i-truck" />
+              </svg>{" "}
+              {howToOrder.minimumDeliveryLabel}{" "}
+              {formatPriceCents(
+                service.delivery.minimumFeeCents,
+                locale,
+                currency,
+              )}
+            </span>
+          )}
+          {service.modes.pickup && (
+            <span>
+              <svg>
+                <use href="#i-bag" />
+              </svg>{" "}
+              {service.pickupFeeText}
+            </span>
+          )}
           <span>
             <svg>
               <use href="#i-check" />
             </svg>{" "}
-            {restaurant.paymentMethods}
+            {service.paymentMethodsText}
           </span>
           <SectionLink
             className={
@@ -430,7 +416,7 @@ export function HowToOrder() {
             }
             href="#onde-estamos"
           >
-            Ver atendimento{" "}
+            {howToOrder.atendimentoLinkLabel}{" "}
             <svg>
               <use href="#i-arrow" />
             </svg>
@@ -441,7 +427,12 @@ export function HowToOrder() {
   );
 }
 
-export function Reviews() {
+export function Reviews({ document }: SectionProps) {
+  const {
+    content: { reviews, demoCopy },
+    demo,
+    locale,
+  } = document;
   return (
     <section
       className={
@@ -465,9 +456,9 @@ export function Reviews() {
                 "handwritten [font-family:var(--hand)] [font-size:29px] [line-height:1.3] [color:var(--yellow-dark)] [margin-bottom:7px] max-[700px]:[font-size:26px]"
               }
             >
-              Quem prova, conta
+              {reviews.eyebrow}
             </p>
-            <h2>É BOM. MAS PODE PERGUNTAR.</h2>
+            <h2>{reviews.title}</h2>
           </div>
           <div
             className={
@@ -475,20 +466,23 @@ export function Reviews() {
             }
           >
             <strong>
-              {restaurant.reviews.rating.toLocaleString("pt-BR")}
+              {reviews.rating.toLocaleString(locale)}
               <span>/5</span>
             </strong>
             <div>
-              <span
+              <RatingStars
                 className={
                   "stars [color:var(--yellow)] [letter-spacing:3px] whitespace-nowrap [font-size:20px] [line-height:1]"
                 }
-              >
-                ★★★★★
-              </span>
+                rating={reviews.rating}
+                label={reviews.starsLabel}
+                locale={locale}
+              />
               <small>
-                Mais de {restaurant.reviews.count} avaliações
-                {restaurant.demo && "*"}
+                {formatCopy(reviews.countLabel, {
+                  count: reviews.count.toLocaleString(locale),
+                })}
+                {demo.enabled && "*"}
               </small>
             </div>
           </div>
@@ -498,16 +492,16 @@ export function Reviews() {
             "reviews-grid grid [grid-template-columns:repeat(3,_1fr)] [gap:24px] [&_figure]:[margin:0] [&_figure]:[border:1px_solid_#ffffff20] [&_figure]:[padding:27px_26px] [&_figure]:[background:#ffffff03] [&_figure]:[border-radius:3px] [&_.stars]:[font-size:17px] [&_blockquote]:[margin:21px_0_25px] [&_blockquote]:[font-size:15px] [&_blockquote]:[line-height:1.8] [&_blockquote]:[color:#e3e0d5] [&_blockquote]:[min-height:108px] [&_figcaption]:flex [&_figcaption]:items-center [&_figcaption]:[gap:12px] [&_figure:nth-child(2)_.avatar]:[background:#a8b7a2] [&_figure:nth-child(3)_.avatar]:[background:#c8b0a0] [&_figcaption_strong]:[font-size:13px] [&_figcaption_strong]:block [&_figcaption_strong]:[font-weight:600] [&_figcaption_small]:[font-size:11px] [&_figcaption_small]:[color:#a7a194] [&_figcaption_small]:block [&_figcaption_svg]:ml-auto [&_figcaption_svg]:[color:var(--yellow)] [&_figcaption_svg]:[width:18px] max-[900px]:[gap:15px] max-[900px]:[&_figure]:[padding:23px_19px] max-[900px]:[&_blockquote]:[font-size:13px] max-[900px]:[&_blockquote]:[min-height:150px] max-[700px]:[grid-template-columns:1fr] max-[700px]:[gap:16px] max-[700px]:[&_figure]:[padding:24px] max-[700px]:[&_blockquote]:[min-height:0] max-[700px]:[&_blockquote]:[font-size:15px] max-[700px]:[&_blockquote]:[margin:18px_0_22px] max-[700px]:[&_figcaption_strong]:[font-size:14px] max-[700px]:[&_figcaption_small]:[font-size:12px]"
           }
         >
-          {restaurant.reviews.entries.map((review) => (
-            <figure key={review.name}>
-              <div
+          {reviews.entries.map((review) => (
+            <figure key={review.id}>
+              <RatingStars
                 className={
                   "stars [color:var(--yellow)] [letter-spacing:3px] whitespace-nowrap [font-size:20px] [line-height:1]"
                 }
-                aria-label="5 estrelas"
-              >
-                ★★★★★
-              </div>
+                rating={review.rating ?? reviews.rating}
+                label={reviews.starsLabel}
+                locale={locale}
+              />
               <blockquote>“{review.quote}”</blockquote>
               <figcaption>
                 <span
@@ -518,7 +512,19 @@ export function Reviews() {
                   {review.initials}
                 </span>
                 <span>
-                  <strong>{review.name}</strong>
+                  <strong>
+                    {review.sourceUrl ? (
+                      <a
+                        href={review.sourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {review.name}
+                      </a>
+                    ) : (
+                      review.name
+                    )}
+                  </strong>
                   <small>{review.role}</small>
                 </span>
                 <Icon name="check" />
@@ -526,14 +532,13 @@ export function Reviews() {
             </figure>
           ))}
         </div>
-        {restaurant.demo && (
+        {demo.enabled && (
           <p
             className={
               "demo-note [font-size:11px] [color:#8f8a7d] [margin-top:18px]"
             }
           >
-            *Avaliações e depoimentos ilustrativos, criados para esta
-            hamburgueria fictícia.
+            {demoCopy.reviewDisclaimer}
           </p>
         )}
       </div>
@@ -541,7 +546,15 @@ export function Reviews() {
   );
 }
 
-export function Location() {
+export function Location({ document }: SectionProps) {
+  const {
+    business,
+    contact,
+    content: { location, service, demoCopy },
+    demo,
+    locale,
+  } = document;
+  const address = business.address;
   return (
     <section
       className={
@@ -564,17 +577,14 @@ export function Location() {
               "handwritten [font-family:var(--hand)] [font-size:29px] [line-height:1.3] [color:var(--yellow-dark)] [margin-bottom:7px] max-[700px]:[font-size:26px]"
             }
           >
-            Puxa uma cadeira
+            {location.eyebrow}
           </p>
           <h2>
-            O MELHOR CAMINHO
+            {location.headline[0]}
             <br />
-            TERMINA EM BURGER.
+            {location.headline[1]}
           </h2>
-          <p>
-            Uma casa descontraída, brasa acesa e espaço para reunir a turma. Ou
-            levar esse momento para casa.
-          </p>
+          <p>{location.description}</p>
           <div
             className={
               "location-details [margin:29px_0] [&_>_div]:flex [&_>_div]:items-start [&_>_div]:[gap:15px] [&_>_div]:[margin:22px_0] [&_>_div_>_svg]:[width:22px] [&_>_div_>_svg]:[color:#a57915] [&_>_div_>_svg]:[margin-top:3px] [&_h3]:[font-size:22px] [&_h3]:[margin-bottom:8px] [&_p]:[font-size:13px] [&_p]:[color:#6e695d] [&_p]:[line-height:1.7] max-[700px]:[&_p]:[font-size:14px]"
@@ -585,20 +595,20 @@ export function Location() {
                 <use href="#i-pin" />
               </svg>
               <div>
-                <h3>Nosso cantinho</h3>
+                <h3>{location.addressHeading}</h3>
                 <p>
-                  {restaurant.location.street} ·{" "}
-                  {restaurant.location.neighborhood}
+                  {address.street} · {address.neighborhood}
                   <br />
-                  {restaurant.location.city}, {restaurant.location.state}{" "}
-                  {restaurant.demo && (
+                  {address.city}, {address.state}{" "}
+                  {demo.enabled && (
                     <span
                       className={
                         "fiction-label block [font-size:10px] [color:#8a8170]"
                       }
                     >
-                      Endereço fictício · o mapa abre a cidade de{" "}
-                      {restaurant.location.city}
+                      {formatCopy(demoCopy.locationDisclaimer, {
+                        city: address.city,
+                      })}
                     </span>
                   )}
                 </p>
@@ -609,31 +619,33 @@ export function Location() {
                 <use href="#i-clock" />
               </svg>
               <div>
-                <h3>Quando a brasa acende</h3>
+                <h3>{location.hoursHeading}</h3>
                 <p>
-                  {restaurant.openingHours.map((hours) => (
+                  {service.openingHours.map((hours) => (
                     <Fragment key={hours}>
                       {hours}
                       <br />
                     </Fragment>
                   ))}
-                  {restaurant.orderingHoursNote}
+                  {service.orderingHoursNote}
                 </p>
               </div>
             </div>
-            <div>
-              <svg>
-                <use href="#i-truck" />
-              </svg>
+            {service.modes.delivery && (
               <div>
-                <h3>A gente chega até você</h3>
-                <p>
-                  {restaurant.delivery.neighborhoods}
-                  <br />
-                  {restaurant.delivery.priceRange}
-                </p>
+                <svg>
+                  <use href="#i-truck" />
+                </svg>
+                <div>
+                  <h3>{location.deliveryHeading}</h3>
+                  <p>
+                    {service.delivery.neighborhoodsSummary}
+                    <br />
+                    {service.delivery.priceRangeText}
+                  </p>
+                </div>
               </div>
-            </div>
+            )}
           </div>
           <div id="contato">
             <OrderLink
@@ -641,14 +653,14 @@ export function Location() {
                 "button inline-flex items-center justify-center gap-3 [min-height:49px] [padding:13px_23px] [border:1px_solid_transparent] rounded-[2px] [font-family:var(--display)] [font-size:18px] font-bold [line-height:1.2] [transition:background_0.18s,_color_0.18s,_transform_0.18s] [&:hover]:[transform:translateY(-2px)] [&_svg]:[width:21px] [&_svg]:[height:21px] button-yellow [background:var(--yellow)] [color:#17130a] [&:hover]:[background:#ffcc33] order-link"
               }
             >
-              Pedir pelo WhatsApp{" "}
+              {location.orderLinkLabel}{" "}
               <svg>
                 <use href="#i-arrow" />
               </svg>
             </OrderLink>
-            {restaurant.demo && (
+            {demo.enabled && (
               <p className={"service-note [margin-top:7px] [color:#8a8170]"}>
-                Canal ilustrativo · marca fictícia
+                {demoCopy.contactDisclaimer}
               </p>
             )}
             <div
@@ -657,18 +669,17 @@ export function Location() {
               }
             >
               <SocialLink>
-                Instagram · {restaurant.contact.instagramLabel}
+                {location.socialLinkPrefix} · {contact.instagramLabel}
               </SocialLink>
             </div>
           </div>
         </div>
         <div className={"location-visual [&_.location-map]:[height:300px]"}>
-          <Image
+          <TemplateImage
             className={
               "location-photo w-full [height:230px] object-cover [border-radius:4px] [margin-bottom:16px] max-[700px]:[height:220px]"
             }
-            src={restaurant.location.image}
-            alt={restaurant.location.imageAlt}
+            image={location.image}
             width="900"
             height="600"
             loading="lazy"
@@ -677,7 +688,9 @@ export function Location() {
             className={
               "location-map relative [height:530px] [background:#e6e1d4] overflow-hidden [border-radius:5px] [border:1px_solid_#d9d0bd] max-[900px]:[height:550px] max-[700px]:[height:370px]"
             }
-            aria-label={`Mapa ilustrativo de ${restaurant.name}`}
+            aria-label={formatCopy(location.mapAccessibleLabel, {
+              businessName: business.name,
+            })}
           >
             <div
               className={
@@ -719,21 +732,21 @@ export function Location() {
                 "map-label absolute [color:#9b9587] [font-size:10px] [letter-spacing:1px] [z-index:1] map-label-one [top:48%] [left:4%] [transform:rotate(-26deg)]"
               }
             >
-              {restaurant.location.mapRoad}
+              {location.mapRoad}
             </span>
             <span
               className={
                 "map-label absolute [color:#9b9587] [font-size:10px] [letter-spacing:1px] [z-index:1] map-label-two [bottom:17%] [left:36%] [transform:rotate(64deg)]"
               }
             >
-              {restaurant.location.mapAvenue}
+              {location.mapAvenue}
             </span>
             <span
               className={
                 "map-neighborhood absolute [top:13%] [right:13%] [font-size:13px] [color:#8c887d] [letter-spacing:3px]"
               }
             >
-              {restaurant.location.neighborhood.toLocaleUpperCase("pt-BR")}
+              {address.neighborhood.toLocaleUpperCase(locale)}
             </span>
             <div
               className={
@@ -749,28 +762,30 @@ export function Location() {
                 "map-place absolute [top:52%] [left:50%] [transform:translateX(-50%)] [background:var(--ink)] [color:#fff] [padding:14px_22px] text-center whitespace-nowrap [box-shadow:0_6px_22px_#35270722] rounded-[3px] [z-index:4] [&_strong]:[font:700_24px_var(--display)] [&_span]:block [&_span]:[font-size:11px] [&_span]:[color:#c2bda9]"
               }
             >
-              <strong>{restaurant.name.toLocaleUpperCase("pt-BR")}</strong>
-              <span>Seu próximo lugar favorito.</span>
+              <strong>{business.name.toLocaleUpperCase(locale)}</strong>
+              <span>{location.mapPlaceTagline}</span>
             </div>
-            <a
-              className={
-                "map-link absolute [bottom:35px] [left:50%] [transform:translateX(-50%)] [z-index:5] whitespace-nowrap button inline-flex items-center justify-center gap-3 [min-height:49px] [padding:13px_23px] [border:1px_solid_transparent] rounded-[2px] [font-family:var(--display)] [font-size:18px] font-bold [line-height:1.2] [transition:background_0.18s,_color_0.18s,_transform_0.18s] [&:hover]:[transform:translateY(-2px)] [&_svg]:[width:21px] [&_svg]:[height:21px] button-dark [background:var(--ink)] [color:white] [&:hover]:[background:#302b20]"
-              }
-              href={restaurant.contact.maps}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Ver {restaurant.location.city} no mapa{" "}
-              <svg>
-                <use href="#i-pin" />
-              </svg>
-            </a>
+            {contact.mapsUrl && (
+              <a
+                className={
+                  "map-link absolute [bottom:35px] [left:50%] [transform:translateX(-50%)] [z-index:5] whitespace-nowrap button inline-flex items-center justify-center gap-3 [min-height:49px] [padding:13px_23px] [border:1px_solid_transparent] rounded-[2px] [font-family:var(--display)] [font-size:18px] font-bold [line-height:1.2] [transition:background_0.18s,_color_0.18s,_transform_0.18s] [&:hover]:[transform:translateY(-2px)] [&_svg]:[width:21px] [&_svg]:[height:21px] button-dark [background:var(--ink)] [color:white] [&:hover]:[background:#302b20]"
+                }
+                href={contact.mapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {formatCopy(location.mapLinkLabel, { city: address.city })}{" "}
+                <svg>
+                  <use href="#i-pin" />
+                </svg>
+              </a>
+            )}
             <span
               className={
                 "map-caption absolute [bottom:12px] [right:12px] [font-size:10px] [background:#fff8] [padding:3px_8px] [color:#7e776a]"
               }
             >
-              Localização ilustrativa
+              {location.mapCaption}
             </span>
           </div>
         </div>
@@ -779,7 +794,11 @@ export function Location() {
   );
 }
 
-export function Faq() {
+export function Faq({ document }: SectionProps) {
+  const {
+    content: { faq },
+    demo,
+  } = document;
   return (
     <section
       className={
@@ -798,17 +817,17 @@ export function Faq() {
               "handwritten [font-family:var(--hand)] [font-size:29px] [line-height:1.3] [color:var(--yellow-dark)] [margin-bottom:7px] max-[700px]:[font-size:26px]"
             }
           >
-            Antes da primeira mordida
+            {faq.eyebrow}
           </p>
           <h2>
-            FICOU COM
+            {faq.headline[0]}
             <br />
-            ALGUMA DÚVIDA?
+            {faq.headline[1]}
           </h2>
           <p>
-            A fome a gente resolve.
+            {faq.intro[0]}
             <br />
-            As dúvidas também.
+            {faq.intro[1]}
           </p>
         </div>
         <div
@@ -816,10 +835,10 @@ export function Faq() {
             "faq-list [&_details]:[border-bottom:1px_solid_#d0c8b7] [&_details:first-child]:[border-top:1px_solid_#d0c8b7] [&_summary]:[list-style:none] [&_summary]:flex [&_summary]:justify-between [&_summary]:items-center [&_summary]:gap-5 [&_summary]:[padding:20px_0] [&_summary]:[font-size:15px] [&_summary]:font-semibold [&_summary]:[cursor:pointer] [&_summary::-webkit-details-marker]:hidden [&_summary_span]:[font-size:24px] [&_summary_span]:[line-height:1] [&_summary_span]:[font-weight:400] [&_details[open]_summary_span]:[transform:rotate(45deg)] [&_details_p]:[padding:0_32px_20px_0] [&_details_p]:[color:#6f685b] [&_details_p]:[font-size:14px] [&_details_p]:[line-height:1.7] max-[700px]:[&_summary]:[font-size:14px] max-[700px]:[&_summary]:[padding:19px_0] max-[700px]:[&_details_p]:[font-size:13px]"
           }
         >
-          {restaurant.faq
-            .filter((item) => !item.demoOnly || restaurant.demo)
+          {faq.items
+            .filter((item) => !item.demoOnly || demo.enabled)
             .map((item) => (
-              <details key={item.question}>
+              <details key={item.id}>
                 <summary>
                   {item.question}
                   <span>+</span>
@@ -833,7 +852,10 @@ export function Faq() {
   );
 }
 
-export function FinalCallToAction() {
+export function FinalCallToAction({ document }: SectionProps) {
+  const {
+    content: { finalCallToAction: cta },
+  } = document;
   return (
     <section
       id="chamada-final"
@@ -852,9 +874,9 @@ export function FinalCallToAction() {
               "handwritten [font-family:var(--hand)] [font-size:29px] [line-height:1.3] [color:var(--yellow-dark)] [margin-bottom:7px] max-[700px]:[font-size:26px]"
             }
           >
-            A brasa já está acesa.
+            {cta.eyebrow}
           </p>
-          <h2>SÓ FALTA VOCÊ ESCOLHER.</h2>
+          <h2>{cta.title}</h2>
         </div>
         <SectionLink
           className={
@@ -862,7 +884,7 @@ export function FinalCallToAction() {
           }
           href="#cardapio"
         >
-          Bora de Brasa{" "}
+          {cta.buttonLabel}{" "}
           <svg>
             <use href="#i-burger" />
           </svg>
@@ -872,7 +894,12 @@ export function FinalCallToAction() {
   );
 }
 
-export function Footer() {
+export function Footer({ document }: SectionProps) {
+  const {
+    business,
+    content: { footer, demoCopy },
+    demo,
+  } = document;
   return (
     <footer className={"footer [background:#111110] [color:#ccc8bd]"}>
       <div
@@ -895,23 +922,25 @@ export function Footer() {
             <use href="#i-burger" />
           </svg>
           <span>
-            {restaurant.brandLines[0]}
+            {business.brandLines[0]}
             <br />
-            {restaurant.brandLines[1]}
-            <small>{restaurant.tagline}</small>
+            {business.brandLines[1]}
+            <small>{business.tagline}</small>
           </span>
         </SectionLink>
         <div>
-          <h3>Explore a casa</h3>
-          <SectionLink href="#cardapio">Cardápio</SectionLink>
-          <SectionLink href="#nossa-historia">Nossa história</SectionLink>
-          <SectionLink href="#onde-estamos">Onde estamos</SectionLink>
+          <h3>{footer.navigationHeading}</h3>
+          {footer.navigationLinks.map((link) => (
+            <SectionLink key={link.target} href={sectionAnchors[link.target]}>
+              {link.label}
+            </SectionLink>
+          ))}
         </div>
         <div>
-          <h3>Acenda a fome</h3>
-          <p>Delivery, retirada e salão.</p>
-          <p>Terça a domingo, a partir das 18h.</p>
-          <SectionLink href="#duvidas">Dúvidas frequentes</SectionLink>
+          <h3>{footer.serviceHeading}</h3>
+          <p>{footer.serviceLines[0]}</p>
+          <p>{footer.serviceLines[1]}</p>
+          <SectionLink href="#duvidas">{footer.faqLinkLabel}</SectionLink>
         </div>
         <div
           className={
@@ -919,9 +948,9 @@ export function Footer() {
           }
         >
           <p>
-            Da primeira mordida
+            {footer.signature[0]}
             <br />
-            ao último guardanapo.
+            {footer.signature[1]}
           </p>
           <SectionLink
             className={
@@ -929,7 +958,7 @@ export function Footer() {
             }
             href="#cardapio"
           >
-            Escolher meu burger{" "}
+            {footer.buttonLabel}{" "}
             <svg>
               <use href="#i-arrow" />
             </svg>
@@ -941,13 +970,13 @@ export function Footer() {
           "site-container [width:min(1240px,_calc(100%_-_88px))] mx-auto max-[1150px]:[width:calc(100%_-_56px)] max-[700px]:[width:calc(100%_-_40px)] max-[360px]:[width:calc(100%_-_28px)] footer-bottom [padding:17px_0] [border-top:1px_solid_#ffffff17] flex items-center justify-between gap-5 [font-size:10px] [color:#8e8879] [&_a:hover]:[color:white] max-[700px]:[padding:18px_0_25px] max-[700px]:[gap:6px] max-[700px]:items-start max-[700px]:flex-wrap max-[700px]:[&_>_span:nth-child(2)]:[order:3] max-[700px]:[&_>_span:nth-child(2)]:w-full max-[700px]:[&_>_a]:[margin-left:auto]"
         }
       >
-        <span>© 2026 {restaurant.name}.</span>
-        {restaurant.demo && (
-          <span>
-            Projeto demonstrativo. Dados fictícios e imagens geradas por IA.
-          </span>
-        )}
-        <SectionLink href="#inicio" fallbackHref="#conteudo">Voltar ao topo ↑</SectionLink>
+        <span>
+          © {footer.copyrightYear} {business.name}.
+        </span>
+        {demo.enabled && <span>{demoCopy.footerDisclaimer}</span>}
+        <SectionLink href="#inicio" fallbackHref="#conteudo">
+          Voltar ao topo ↑
+        </SectionLink>
       </div>
     </footer>
   );
