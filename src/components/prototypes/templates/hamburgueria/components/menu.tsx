@@ -8,7 +8,6 @@ import { TemplateImage } from "./template-image";
 import { useHamburgueriaDocument } from "./document-provider";
 import { formatPriceCents } from "../lib/format";
 import { useInteractions } from "./interaction-provider";
-import { OrderLink } from "./contact-links";
 import { Icon } from "./icons";
 
 export function Menu() {
@@ -34,20 +33,20 @@ export function Menu() {
           }
         >
           <div>
-            <p
+            {menu.eyebrow.trim() && (<p
               className={
                 "handwritten [font-family:var(--hand)] [font-size:29px] [line-height:1.3] [color:var(--yellow-dark)] [margin-bottom:7px] max-[700px]:[font-size:26px]"
               }
             >
               {menu.eyebrow}
-            </p>
+            </p>)}
             <h2 id="menu-title">{menu.title}</h2>
           </div>
           <SectionLink
             className={
               "text-link [border:0] [background:none] [padding:8px_0] inline-flex items-center gap-3 [font-size:15px] [font-weight:600] [&:hover]:[text-decoration:underline] [&_svg]:[width:20px]"
             }
-            href="#como-pedir"
+            href="#onde-estamos"
           >
             {menu.helpLinkLabel} <Icon name="arrow" />
           </SectionLink>
@@ -77,114 +76,84 @@ export function Menu() {
               </button>
             ))}
           </div>
-          <span
+          {menu.note.trim() && (<span
             className={
               "menu-note [font-size:13px] [color:var(--muted)] max-[1150px]:hidden"
             }
           >
             {menu.note}
-          </span>
+          </span>)}
         </div>
         <div
           id="menu-grid"
-          className={
-            "menu-grid grid [grid-template-columns:repeat(4,_1fr)] [gap:22px] max-[1150px]:[gap:16px] max-[900px]:[grid-template-columns:repeat(2,_1fr)] max-[900px]:[gap:22px] max-[700px]:[gap:14px] max-[360px]:[gap:10px]"
-          }
           aria-live="polite"
+          className="menu-grid grid grid-cols-2 gap-4 max-[900px]:grid-cols-1"
         >
+          {!products.some(product => product.categoryId === category) && (
+            <p role="status" className="col-span-full py-10 text-center [color:var(--muted)]">
+              {products.length ? "Nenhum produto nesta categoria." : "Nenhum produto disponível no momento."}
+            </p>
+          )}
           {products.map((product) => (
             <article
               key={product.id}
-              className={tw(
-                `product-card${product.image ? "" : " simple-product"}`,
-              )}
+              className="product-card grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-stretch gap-4 rounded-md border border-[#e3ded4] bg-[#fffefa] p-4 max-[700px]:gap-3 max-[700px]:p-3.5 max-[360px]:p-3"
               hidden={product.categoryId !== category}
             >
-              <div
-                className={
-                  "product-image relative [background:#141412] [aspect-ratio:1.2] overflow-hidden [&_.template-image]:w-full [&_.template-image]:h-full [&_.template-image]:object-cover [&_.template-image]:[transition:transform_0.4s] max-[900px]:[aspect-ratio:1.5] max-[700px]:[aspect-ratio:1.05]"
-                }
-              >
+              <div className="product-body flex h-full min-w-0 flex-col items-start gap-1.5 [overflow-wrap:anywhere]">
+                <div className="grid w-full min-w-0 grid-cols-1 justify-items-start gap-1.5">
+                  <h3 className="min-w-0 text-xl leading-tight max-[700px]:text-lg">{product.name}</h3>
+                  {(product.badge?.trim() || product.vegetarian) && (
+                    <span className={`product-badge inline-flex rounded-sm px-2 py-1 text-[10px] font-bold leading-tight ${product.vegetarian ? "bg-[#d8e3b5]" : "bg-[var(--yellow)]"} text-[var(--ink)]`}>
+                      {product.badge?.trim() || menu.vegetarianLabel}
+                    </span>
+                  )}
+                </div>
+                {product.description.trim() && (
+                  <p className="text-[13px] leading-relaxed text-[#646057]">{product.description}</p>
+                )}
+                <span className="product-price mt-auto whitespace-nowrap pt-1 font-[family-name:var(--display)] text-[22px] font-bold leading-tight text-[#9d6500] max-[700px]:text-xl">
+                  {formatPriceCents(product.priceCents, locale, currency)}
+                </span>
+              </div>
+              <div className={`product-image grid size-28 shrink-0 place-items-center self-center overflow-hidden rounded-md max-[700px]:size-22 max-[360px]:size-20 [&_.template-image]:h-full [&_.template-image]:w-full [&_.template-image]:object-cover [&_svg]:size-10 ${product.image ? "bg-[#141412]" : "bg-[#eae4d8] text-[#967337]"}`}>
                 {product.image ? (
                   <TemplateImage
                     image={product.image}
-                    width={640}
-                    height={640}
+                    width={160}
+                    height={160}
+                    sizes="(max-width: 360px) 80px, (max-width: 700px) 88px, 112px"
                     loading="lazy"
                   />
                 ) : (
                   <Icon name={product.icon ?? "burger"} />
                 )}
-                {(product.badge || product.vegetarian) && (
-                  <span
-                    className={tw(
-                      `product-badge${product.vegetarian ? " vegetarian" : ""}`,
-                    )}
-                  >
-                    {product.badge ?? menu.vegetarianLabel}
-                  </span>
-                )}
-              </div>
-              <div
-                className={
-                  "product-body [padding:18px] flex flex-col [flex:1] [&_h3]:[font-size:25px] [&_h3]:[line-height:1.1] [&_h3]:[margin-bottom:9px] [&_>_p]:[font-size:13px] [&_>_p]:[line-height:1.55] [&_>_p]:[color:#646057] [&_>_p]:flex-1 [&_>_p]:[min-height:61px] max-[1150px]:[padding:14px] max-[1150px]:[&_h3]:[font-size:23px] max-[1150px]:[&_>_p]:[font-size:12px] max-[900px]:[padding:20px] max-[900px]:[&_h3]:[font-size:28px] max-[900px]:[&_>_p]:[font-size:14px] max-[900px]:[&_>_p]:[min-height:43px] max-[700px]:[padding:13px_12px] max-[700px]:[&_h3]:[font-size:23px] max-[700px]:[&_>_p]:[font-size:12px] max-[700px]:[&_>_p]:[min-height:94px] max-[360px]:[padding:11px] max-[360px]:[&_h3]:[font-size:21px]"
-                }
-              >
-                <h3>{product.name}</h3>
-                <p>{product.description}</p>
-                <div
-                  className={
-                    "product-bottom flex justify-between items-center [gap:10px] [margin-top:19px] max-[700px]:flex-col max-[700px]:items-start max-[700px]:[gap:11px] max-[700px]:[margin-top:13px]"
-                  }
-                >
-                  <span
-                    className={
-                      "product-price [font-family:var(--display)] [font-size:28px] font-bold [color:#9d6500] whitespace-nowrap max-[1150px]:[font-size:25px] max-[900px]:[font-size:30px] max-[700px]:[font-size:29px] max-[700px]:[line-height:1]"
-                    }
-                  >
-                    {formatPriceCents(product.priceCents, locale, currency)}
-                  </span>
-                  <OrderLink
-                    product={product}
-                    className={
-                      "product-order [font-family:var(--display)] [font-size:17px] font-semibold flex items-center [gap:6px] [border:0] [background:var(--ink)] [color:white] [padding:8px_12px] [border-radius:3px] [&:hover]:[background:#55421a] [&_svg]:[width:16px] [&_svg]:[height:16px] max-[1150px]:[font-size:15px] max-[1150px]:[padding:7px_9px] max-[900px]:[font-size:17px] max-[900px]:[padding:8px_15px] max-[700px]:[font-size:16px] max-[700px]:justify-center max-[700px]:[padding:9px_10px] max-[700px]:[min-height:40px] max-[700px]:w-full order-link"
-                    }
-                    aria-label={`Pedir ${product.name.toLocaleLowerCase(locale)} pelo WhatsApp`}
-                  >
-                    {menu.orderButtonLabel} <Icon name="arrow" />
-                  </OrderLink>
-                </div>
-                {product.allergens && (
-                  <p className={"product-allergens [margin-top:12px]"}>
-                    {product.allergens}
-                  </p>
-                )}
               </div>
             </article>
           ))}
         </div>
-        <div
+        {Boolean(menu.extras.length || menu.extrasHeading.trim()) && (<div
           className={
             "extras-strip [margin-top:24px] [border-top:1px_solid_var(--line)] [padding-top:20px] flex flex-wrap [gap:10px_24px] [font-size:13px] [color:#726b5e] [&_strong]:[color:var(--ink)] max-[700px]:[font-size:12px] max-[700px]:[gap:7px_17px] max-[700px]:[&_strong]:w-full"
           }
         >
-          <strong>{menu.extrasHeading}</strong>
+          {menu.extrasHeading.trim() && (<strong>{menu.extrasHeading}</strong>)}
           {menu.extras.map((extra) => (
             <span key={extra.id}>
               {extra.name} + {formatPriceCents(extra.priceCents, locale, currency)}
             </span>
           ))}
-        </div>
-        <div
+        </div>)}
+        {Boolean(menu.customizationNote.trim() || (menu.vegetarianNote.trim() && products.some(product => product.vegetarian))) && (<div
           className={
             "menu-footer flex items-center justify-between gap-5 [padding-top:25px] [font-size:12px] [color:#716d64] [&_span]:flex [&_span]:gap-2 [&_span]:items-center [&_svg]:[width:19px] [&_svg]:[color:#607b2d] max-[700px]:flex-col max-[700px]:items-start max-[700px]:gap-2 max-[700px]:[font-size:11px] max-[700px]:[padding-top:19px]"
           }
         >
-          {products.some(product => product.vegetarian) && (
+          {menu.vegetarianNote.trim() && products.some(product => product.vegetarian) && (
             <span><Icon name="leaf" /> {menu.vegetarianNote}</span>
           )}
-          <p>{menu.customizationNote}</p>
-        </div>
+          {menu.customizationNote.trim() && (<p>{menu.customizationNote}</p>)}
+        </div>)}
       </div>
     </section>
   );

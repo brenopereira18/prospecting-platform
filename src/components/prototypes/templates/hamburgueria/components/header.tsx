@@ -1,44 +1,23 @@
 "use client";
 
-import { tw } from "../styles/tailwind";
-
-import { useEffect, useRef, useState } from "react";
 import { Icon } from "./icons";
 import { useHamburgueriaDocument } from "./document-provider";
 import { SectionLink } from "./section-link";
-import { sectionAnchors } from "../lib/navigation";
+import { structuralSectionIds } from "../lib/navigation";
 
 export function Header() {
-  const header = useRef<HTMLElement>(null);
-  const { business, content, sections } = useHamburgueriaDocument();
-  const navigation = content.header.navigation
-    .filter(({ target }) => sections[target])
-    .map(({ target, label }) => [sectionAnchors[target], label] as const);
-  const [open, setOpen] = useState(false);
-  const [active, setActive] = useState<string>("#inicio");
-  const activeHref = navigation.some(([href]) => href === active)
-    ? active
-    : navigation[0]?.[0];
-  useEffect(() => {
-    const ownerDocument = header.current?.ownerDocument;
-    if (!open || !ownerDocument) return;
-    const close = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
-    };
-    ownerDocument.addEventListener("keydown", close);
-    return () => ownerDocument.removeEventListener("keydown", close);
-  }, [open]);
+  const { business, content } = useHamburgueriaDocument();
 
   return (
     <header
-      ref={header}
+      id={structuralSectionIds.header}
       className={
         "header [background:var(--black)] [color:white] relative [z-index:20]"
       }
     >
       <div
         className={
-          "site-container [width:min(1240px,_calc(100%_-_88px))] mx-auto max-[1150px]:[width:calc(100%_-_56px)] max-[700px]:[width:calc(100%_-_40px)] max-[360px]:[width:calc(100%_-_28px)] header-inner [min-height:108px] flex items-center justify-between [gap:26px] max-[1150px]:[gap:18px] max-[900px]:[min-height:91px] max-[700px]:[min-height:84px] max-[700px]:gap-4 max-[700px]:flex-wrap"
+          "site-container [width:min(1240px,_calc(100%_-_88px))] mx-auto max-[1150px]:[width:calc(100%_-_56px)] max-[700px]:[width:calc(100%_-_40px)] max-[360px]:[width:calc(100%_-_28px)] header-inner [min-height:108px] flex items-center justify-between [gap:26px] max-[1150px]:[gap:18px] max-[900px]:[min-height:91px] max-[700px]:[min-height:84px] max-[700px]:gap-4 max-[360px]:gap-2"
         }
       >
         <SectionLink
@@ -57,43 +36,10 @@ export function Header() {
           />
           <span>
             {business.brandLines[0]}
-            <br />
-            {business.brandLines[1]}
+            {business.brandLines[1].trim() && <><br />{business.brandLines[1]}</>}
             <small>Desde {business.foundedYear}</small>
           </span>
         </SectionLink>
-        <button
-          className={
-            "nav-toggle hidden max-[700px]:flex max-[700px]:flex-col max-[700px]:[gap:5px] max-[700px]:ml-auto max-[700px]:[order:2] max-[700px]:[min-height:44px] max-[700px]:[min-width:44px] max-[700px]:[&_span]:block max-[700px]:[&_span]:[width:22px] max-[700px]:[&_span]:[height:2px] max-[700px]:[&_span]:[background:var(--yellow)] icon-button [border:0] [background:transparent] grid place-items-center [padding:10px]"
-          }
-          aria-label={open ? "Fechar menu" : "Abrir menu"}
-          aria-controls="navigation"
-          aria-expanded={open}
-          onClick={() => setOpen(!open)}
-        >
-          <span />
-          <span />
-          <span />
-        </button>
-        <nav
-          id="navigation"
-          className={tw(`navigation${open ? " open" : ""}`)}
-          aria-label="Menu principal"
-        >
-          {navigation.map(([href, label]) => (
-            <a
-              key={href}
-              className={tw(activeHref === href ? "nav-active" : undefined)}
-              href={href}
-              onClick={() => {
-                setOpen(false);
-                setActive(href);
-              }}
-            >
-              {label}
-            </a>
-          ))}
-        </nav>
         <SectionLink
           className={
             "button inline-flex items-center justify-center gap-3 [min-height:49px] [padding:13px_23px] [border:1px_solid_transparent] rounded-[2px] [font-family:var(--display)] [font-size:18px] font-bold [line-height:1.2] [transition:background_0.18s,_color_0.18s,_transform_0.18s] [&:hover]:[transform:translateY(-2px)] [&_svg]:[width:21px] [&_svg]:[height:21px] button-yellow [background:var(--yellow)] [color:#17130a] [&:hover]:[background:#ffcc33] header-order [margin-left:14px] [min-height:45px] [font-size:16px] [padding:11px_17px] max-[900px]:[font-size:15px] max-[900px]:[padding:10px_12px] max-[900px]:[margin-left:0] max-[900px]:[&_svg]:hidden max-[700px]:ml-auto max-[700px]:[order:1] max-[700px]:[min-height:42px] max-[700px]:[padding:10px_13px] max-[360px]:[padding:10px] max-[360px]:[font-size:14px]"

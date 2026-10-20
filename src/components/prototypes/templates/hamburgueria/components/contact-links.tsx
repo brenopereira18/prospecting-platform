@@ -15,8 +15,7 @@ export function OrderLink({
 }: LinkProps & {
   product?: HamburgueriaPrototypeDocument["content"]["menu"]["products"][number];
 }) {
-  const { showDemo } = useInteractions();
-  const { business, contact, demo, content, locale, currency } =
+  const { business, contact, content, locale, currency } =
     useHamburgueriaDocument();
   const message = formatCopy(
     product
@@ -30,21 +29,18 @@ export function OrderLink({
         : "",
     },
   );
-  const href = demo.enabled
-    ? null
-    : getWhatsAppUrl(contact.whatsapp ?? "", message);
+  const href = getWhatsAppUrl(contact.whatsapp ?? "", message);
   return (
     <a
       {...props}
-      href={href ?? "#contact-dialog"}
+      href={href ?? undefined}
+      role={href ? props.role : "link"}
+      aria-disabled={href ? undefined : true}
+      tabIndex={href ? props.tabIndex : -1}
+      title={href ? props.title : "Pedidos indisponíveis no momento."}
+      className={`${props.className ?? ""}${href ? "" : " cursor-not-allowed opacity-50"}`}
       target={href ? "_blank" : undefined}
       rel={href ? "noopener noreferrer" : undefined}
-      onClick={(event) => {
-        if (!href) {
-          event.preventDefault();
-          showDemo("order");
-        }
-      }}
     >
       {children}
     </a>

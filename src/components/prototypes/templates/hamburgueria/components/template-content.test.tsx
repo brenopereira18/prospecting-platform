@@ -10,7 +10,8 @@ import {
 } from "../schema/hamburgueria.schema";
 import { HamburgueriaDocumentProvider } from "./document-provider";
 import { formatPriceParts } from "../lib/format";
-import { createEditorDocument, editorDocumentReducer } from "../../../editor/hamburgueria/editor-document";
+import { createEditorDocument, editorDocumentReducer, getPreviewDocument, validateEditorDocument } from "../../../editor/hamburgueria/editor-document";
+import { editorSections, getPreviewSectionId } from "../../../editor/hamburgueria/editor-navigation";
 
 // Node does not have Next's static-image loader. Load the actual bytes rather
 // than replacing the visual components, and retain the real image dimensions.
@@ -33,6 +34,132 @@ async function render(document: HamburgueriaPrototypeDocument) {
     </HamburgueriaDocumentProvider>,
   );
 }
+
+test("cleared supporting text stays valid and disappears from the preview without empty text blocks", async () => {
+  let document = createEditorDocument();
+  document = editorDocumentReducer(document, { type: "hero", field: "eyebrow", value: "   " });
+  document = editorDocumentReducer(document, { type: "heroDescription", index: 0, value: "" });
+  document = editorDocumentReducer(document, { type: "heroDescription", index: 1, value: "" });
+  document.business.tagline = "";
+  document.business.brandLines[1] = "";
+  const { hero, story, menu, faq, location, footer, service, qualities, howToOrder, reviews } = document.content;
+  hero.headline[1] = "";
+  hero.hoursSummary = hero.serviceSummary = hero.bottomNote = hero.badgeText = "";
+  hero.badgeLines = ["", ""];
+  story.eyebrow = "";
+  story.paragraphs = ["", "   "];
+  story.signature = ["", ""];
+  story.featured.description = ["", ""];
+  story.featured.priceLabel = "";
+  faq.intro = ["", ""];
+  faq.headline[1] = "";
+  menu.note = menu.vegetarianNote = menu.customizationNote = menu.eyebrow = "";
+  menu.products.forEach(product => { product.description = " "; product.badge = ""; product.allergens = ""; });
+  qualities.items.forEach(item => { item.description = ""; });
+  howToOrder.steps.forEach(step => { step.body = ""; });
+  reviews.entries.forEach(review => { review.role = ""; });
+  location.description = location.mapPlaceTagline = location.mapCaption = location.mapRoad = location.mapAvenue = "";
+  footer.serviceLines = footer.signature = ["", ""];
+  service.orderingHoursNote = service.paymentMethodsText = service.pickupFeeText = "";
+  service.delivery.neighborhoodsSummary = service.delivery.priceRangeText = "";
+  assert.deepEqual(validateEditorDocument(document), {});
+  schemaCheck(document);
+  const html = await render(getPreviewDocument(document));
+  for (const marker of ["hero-description ", "hero-service ", "hero-stamp ", "hero-bottom ", "story-signature ", "menu-footer "])
+    assert.ok(!html.includes(marker), marker);
+  assert.doesNotMatch(html, /<(?:p|small|strong)[^>]*>\s*<\/(?:p|small|strong)>/);
+  assert.ok(html.includes("BRASA CLÁSSICO"));
+  assert.ok(html.includes('href="#cardapio"'));
+});
+
+test("essential names, headings, button labels and text limits remain validated", () => {
+  for (const mutate of [
+    (document: HamburgueriaPrototypeDocument) => { document.business.name = ""; },
+    (document: HamburgueriaPrototypeDocument) => { document.content.menu.products[0].name = ""; },
+    (document: HamburgueriaPrototypeDocument) => { document.content.hero.headline[0] = ""; },
+    (document: HamburgueriaPrototypeDocument) => { document.content.hero.primaryCtaLabel = ""; },
+    (document: HamburgueriaPrototypeDocument) => { document.content.hero.eyebrow = "x".repeat(121); },
+  ]) {
+    const document = createEditorDocument();
+    mutate(document);
+    assert.equal(hamburgueriaPrototypeDocumentSchema.safeParse(document).success, false);
+  }
+});
+
+test("partial multiline copy has no orphan breaks and clearing social text leaves no blank link", async () => {
+  const document = createEditorDocument();
+  document.content.hero.description = ["   ", "Descrição restante"];
+  document.content.faq.intro = ["Introdução restante", ""];
+  document.content.location.socialLinkPrefix = "";
+  document.contact.instagramLabel = "";
+  const html = await render(document);
+  schemaCheck(document);
+  assert.match(html, /<p class="hero-description [^"]*">Descrição restante<\/p>/);
+  assert.match(html, /<p>Introdução restante<\/p>/);
+  assert.ok(!html.includes("location-social "));
+});
+
+test("menu renders a product list and only reviews remain in a carousel", async () => {
+  const html = await render(createEditorDocument());
+  assert.equal([...html.matchAll(/aria-roledescription="carrossel"/g)].length, 1);
+  for (const label of ["Produtos anteriores", "Próximos produtos", "Deslize para ver mais"]) assert.ok(!html.includes(label), label);
+  assert.ok(html.includes('id="menu-grid"'));
+  assert.ok(html.includes("BRASA CLÁSSICO"));
+  assert.ok(html.includes("Marina Costa"));
+  assert.ok(!html.includes("Pedir brasa clássico pelo WhatsApp"));
+  assert.ok(html.includes("Pedir pelo WhatsApp"));
+});
+
+test("menu uses two desktop columns and one mobile column with text before the right-hand image", async () => {
+  const html = await render(createEditorDocument());
+  assert.ok(html.includes("menu-grid grid grid-cols-2"));
+  assert.ok(html.includes("max-[900px]:grid-cols-1"));
+  const cards = [...html.matchAll(/<article\b[^>]*class="product-card [^"]*"[^>]*>([\s\S]*?)<\/article>/g)];
+  assert.ok(cards.length > 0);
+  for (const [, card] of cards) {
+    assert.ok(card.indexOf("product-body") < card.indexOf("product-image"));
+    assert.ok(card.includes("product-price"));
+    assert.ok(!card.includes("product-order"));
+    assert.doesNotMatch(card, /<(?:a|button)\b/);
+  }
+  assert.ok(html.includes("reviews-loop-track"));
+});
+
+test("reviews loop hides its repeated copy from assistive technology and disables looping for zero or one review", async () => {
+  const document = createEditorDocument();
+  const html = await render(document);
+  assert.match(html, /data-looping="true"/);
+  assert.ok(!html.includes("Pausar animação"));
+  assert.ok(!html.includes("Retomar animação"));
+  assert.match(html, /reviews-loop-copy" aria-hidden="true" inert=""/);
+  const styles = readFileSync("src/components/prototypes/templates/hamburgueria/hamburgueria.css", "utf8");
+  assert.match(styles, /from \{ transform: translateX\(-50%\); \}/);
+  assert.match(styles, /prefers-reduced-motion: reduce/);
+  document.content.reviews.entries = document.content.reviews.entries.slice(0, 2);
+  const two = await render(document);
+  assert.match(two, /data-looping="true"/);
+  assert.equal([...two.matchAll(/<figure/g)].length, 8);
+  document.content.reviews.entries = document.content.reviews.entries.slice(0, 1);
+  const single = await render(document);
+  assert.match(single, /data-looping="false"/);
+  assert.ok(!single.includes("reviews-loop-copy"));
+  assert.ok(!single.includes("Pausar animação"));
+  document.content.reviews.entries = [];
+  const empty = await render(document);
+  assert.ok(empty.includes("Nenhum depoimento disponível no momento."));
+  assert.ok(!empty.includes("reviews-loop-copy"));
+});
+
+test("editor destinations exist in the real template without publishing selection styles", async () => {
+  const document = createEditorDocument();
+  const html = await render(document);
+  for (const [section] of editorSections) {
+    const id = getPreviewSectionId(section, document.sections);
+    if (id) assert.ok(html.includes(`id="${id}"`), `Missing preview target: ${section}`);
+  }
+  assert.ok(!html.includes("data-prospecta-selected-section"));
+  assert.ok(!html.includes("data-prospecta-editor-selection"));
+});
 
 test("editor actions update the existing landing page and reset restores its content", async () => {
   let document = editorDocumentReducer(createEditorDocument(), { type: "heroHeadline", index: 0, value: "TÍTULO DO EDITOR" });
@@ -71,14 +198,17 @@ test("menu and featured price come from the same document product", async () => 
   assert.doesNotMatch(html, /R\$ 39<span>,90<\/span>/);
 });
 
-test("WhatsApp destination and product message use the supplied document", async () => {
+test("general WhatsApp order remains available without individual product buttons", async () => {
   const document = structuredClone(brasaBurgerDefaultDocument);
   document.demo.enabled = false;
   document.contact.whatsapp = "5511888888888";
+  document.business.name = "Hamburgueria teste";
   document.content.menu.products[0].name = "Burger especial";
   const html = await render(document);
   assert.match(html, /https:\/\/wa.me\/5511888888888/);
-  assert.match(html, /Burger%20especial/);
+  assert.match(html, /Hamburgueria%20teste/);
+  assert.ok(!html.includes("product-order"));
+  assert.ok(html.includes("Burger especial"));
 });
 
 test("reviews and their stars follow the document ratings", async () => {
@@ -138,7 +268,41 @@ test("missing runtime references degrade without throwing", async () => {
   const html = await render(document);
   assert.match(html, /<footer/);
   assert.doesNotMatch(html, /class="combo-price/);
+  assert.match(html, /Nenhum produto disponível no momento/);
 });
+
+test("editor menu operations reach the real landing page including ordering, extras and cleared features", async () => {
+  let document = createEditorDocument();
+  document = editorDocumentReducer(document, { type: "menu/product/add", id: "novo-editor", categoryId: "burgers" });
+  document = editorDocumentReducer(document, { type: "menu/product/edit", id: "novo-editor", changes: { name: "Produto do editor", priceCents: 1923 } });
+  document = editorDocumentReducer(document, { type: "menu/extra/add", id: "extra-editor" });
+  document = editorDocumentReducer(document, { type: "menu/extra/edit", id: "extra-editor", changes: { name: "Adicional do editor", priceCents: 123 } });
+  document = editorDocumentReducer(document, { type: "menu/category/edit", id: "burgers", label: "Categoria do editor" });
+  const html = await render(getPreviewDocument(document));
+  assert.match(html, /Produto do editor/);
+  assert.match(html, /19,23/);
+  assert.match(html, /Adicional do editor/);
+  assert.match(html, /1,23/);
+  assert.match(html, /Categoria do editor/);
+  const id = document.content.menu.products[1].id;
+  document = editorDocumentReducer(document, { type: "menu/product/move", id, direction: -1 });
+  const reordered = await render(document);
+  assert.ok(reordered.indexOf(document.content.menu.products[0].name + "</h3>") < reordered.indexOf(document.content.menu.products[1].name + "</h3>"));
+  document = editorDocumentReducer(document, { type: "menu/product/delete", id: document.content.story.featured.productId! });
+  schemaCheck(document);
+  const removed = await render(document);
+  assert.doesNotMatch(removed, /class="combo-panel /);
+  assert.match(removed, /id="nossa-historia"/);
+  for (const category of document.content.menu.categories) document = editorDocumentReducer(document, { type: "menu/category/delete", id: category.id });
+  schemaCheck(document);
+  const empty = await render(document);
+  assert.match(empty, /Nenhum produto disponível no momento/);
+  assert.match(empty, /<footer/);
+});
+
+function schemaCheck(document: HamburgueriaPrototypeDocument) {
+  hamburgueriaPrototypeDocumentSchema.parse(document);
+}
 
 test("default content retains the current Brasa Burger copy and prices", async () => {
   const html = await render(brasaBurgerDefaultDocument);
@@ -156,6 +320,29 @@ test("default content retains the current Brasa Burger copy and prices", async (
   ]) {
     assert.ok(html.includes(text), `Missing default content: ${text}`);
   }
+});
+
+test("section editor changes reach the existing renderer and empty reviews and FAQ remain usable", async () => {
+  let document = createEditorDocument();
+  document = editorDocumentReducer(document, { type: "sectionField", path: "content.story.headline.0", value: "HISTÓRIA EDITADA" });
+  document = editorDocumentReducer(document, { type: "sectionField", path: "content.location.description", value: "LOCALIZAÇÃO EDITADA" });
+  document = editorDocumentReducer(document, { type: "sectionField", path: "business.address.postalCode", value: "13000-000" });
+  document = editorDocumentReducer(document, { type: "sectionField", path: "content.finalCallToAction.title", value: "CHAMADA EDITADA" });
+  document = editorDocumentReducer(document, { type: "sectionField", path: "content.footer.signature.0", value: "RODAPÉ EDITADO" });
+  document = editorDocumentReducer(document, { type: "sectionItem/edit", list: "reviews", id: document.content.reviews.entries[0].id, changes: { quote: "DEPOIMENTO EDITADO", rating: 2 } });
+  document = editorDocumentReducer(document, { type: "sectionItem/edit", list: "faq", id: document.content.faq.items[0].id, changes: { question: "PERGUNTA EDITADA", answer: "RESPOSTA EDITADA" } });
+  document = editorDocumentReducer(document, { type: "sectionStrings/edit", list: "openingHours", index: 0, value: "HORÁRIO EDITADO" });
+  const html = await render(document);
+  for (const text of ["HISTÓRIA EDITADA", "LOCALIZAÇÃO EDITADA", "13000-000", "CHAMADA EDITADA", "RODAPÉ EDITADO", "DEPOIMENTO EDITADO", "PERGUNTA EDITADA", "RESPOSTA EDITADA", "HORÁRIO EDITADO"]) assert.ok(html.includes(text), text);
+  assert.ok(html.includes('aria-label="2 de 5 estrelas"'));
+  assert.ok(html.includes("<details"));
+  for (const review of document.content.reviews.entries) document = editorDocumentReducer(document, { type: "sectionItem/delete", list: "reviews", id: review.id });
+  for (const question of document.content.faq.items) document = editorDocumentReducer(document, { type: "sectionItem/delete", list: "faq", id: question.id });
+  schemaCheck(document);
+  const empty = await render(document);
+  assert.ok(empty.includes("Nenhum depoimento disponível no momento."));
+  assert.ok(empty.includes("Nenhuma pergunta cadastrada no momento."));
+  assert.ok(empty.includes("BRASA CLÁSSICO"));
 });
 
 test("unresolved uploads are reported and render a fallback without fictitious URLs", async () => {

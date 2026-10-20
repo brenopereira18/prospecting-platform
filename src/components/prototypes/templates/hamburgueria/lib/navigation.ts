@@ -1,5 +1,7 @@
 import type { HamburgueriaSectionId } from "../schema/hamburgueria.schema";
 
+export const structuralSectionIds = { header: "hamburgueria-header", footer: "hamburgueria-footer" } as const;
+
 // Preserve os IDs existentes: links externos e o CSS já podem referenciá-los.
 export const sectionAnchors = {
   hero: "#inicio",
