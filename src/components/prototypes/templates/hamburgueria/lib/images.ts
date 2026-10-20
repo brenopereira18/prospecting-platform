@@ -1,13 +1,15 @@
 import type { StaticImageData } from "next/image";
 import type { ImageReference } from "../../../schemas/prototype-base.schema";
 import type { HamburgueriaPrototypeDocument } from "../schema/hamburgueria.schema";
+import type { HamburgueriaImageKey } from "./image-catalog";
+import { getHamburgueriaImageReferences } from "./image-references";
 import bacon from "../assets/bacon.webp";
 import classic from "../assets/classic.webp";
 import hero from "../assets/hero.webp";
 import interior from "../assets/interior.webp";
 import veggie from "../assets/veggie.webp";
 
-const templateAssets: Record<string, StaticImageData> = {
+const templateAssets: Record<HamburgueriaImageKey, StaticImageData> = {
   bacon,
   classic,
   hero,
@@ -19,6 +21,8 @@ export interface ResolvedUploadImage {
   src: string;
   width: number;
   height: number;
+  /** Editor-only resource metadata; never part of the prototype JSON. */
+  temporary?: true;
 }
 export type UploadImageResolver = (
   assetId: string,
@@ -48,6 +52,7 @@ function isSafeUpload(image: ResolvedUploadImage): boolean {
     return true;
   try {
     const url = new URL(image.src);
+    if (image.temporary === true) return url.protocol === "blob:" && /^https?:$/.test(new URL(url.origin).protocol);
     return url.protocol === "https:" && !url.username && !url.password;
   } catch {
     return false;
@@ -60,7 +65,7 @@ export function resolveHamburgueriaImage(
 ): StaticImageData | null {
   if (image.source === "template")
     return Object.hasOwn(templateAssets, image.key)
-      ? templateAssets[image.key]
+      ? templateAssets[image.key as HamburgueriaImageKey]
       : null;
   const upload = Object.hasOwn(uploads, image.assetId)
     ? uploads[image.assetId]
@@ -75,15 +80,8 @@ export function prepareUploadImages(
   report: (message: string) => void = console.warn,
 ): ResolvedUploadImages {
   const uploads: ResolvedUploadImages = {};
-  const images = [
-    document.seo.socialImage,
-    document.content.hero.image,
-    document.content.location.image,
-    document.content.story.featured.image,
-    ...document.content.menu.products.map((product) => product.image),
-  ];
   const seen = new Set<string>();
-  for (const image of images) {
+  for (const { image } of getHamburgueriaImageReferences(document)) {
     if (!image) continue;
     if (image.source === "template") {
       if (!resolveHamburgueriaImage(image))

@@ -19,6 +19,8 @@ import { NumberField } from "./editor-number-fields";
 import { sectionField } from "./editor-section-document";
 import { editorSections, isContentSection, type EditorPanelSection } from "./editor-navigation";
 import { getWhatsAppUrl } from "../../templates/hamburgueria/lib/format";
+import { EditorImagePicker } from "./editor-image-picker";
+import { TEMPORARY_IMAGE_NOTICE } from "./temporary-images";
 
 const fontNames: Record<FontKey, string> = {
   barlow: "Barlow",
@@ -37,7 +39,7 @@ const sectionNames = {
   finalCallToAction: "Chamada Final",
 } satisfies Record<HamburgueriaSectionId, string>;
 
-function AppearanceFields({ document, dispatch, errors, onValidate }: PanelProps) {
+function AppearanceFields({ document, dispatch, errors, onValidate, temporaryImages }: PanelProps) {
   return (
     <div className="space-y-7">
       <fieldset className="space-y-4">
@@ -60,6 +62,11 @@ function AppearanceFields({ document, dispatch, errors, onValidate }: PanelProps
           );
         })}
       </fieldset>
+      <details className="space-y-4 border-t border-sidebar-hover pt-5">
+        <summary className="cursor-pointer text-sm font-semibold">Imagem de compartilhamento</summary>
+        <p className="text-xs text-secundary">Imagem opcional do SEO para compartilhamento em redes sociais. Não aparece no conteúdo da página.</p>
+        <EditorImagePicker document={document} dispatch={dispatch} errors={errors} onValidate={onValidate} temporaryImages={temporaryImages} target={{ kind: "social" }} label="Imagem de compartilhamento" />
+      </details>
       <fieldset className="space-y-4 border-t border-sidebar-hover pt-5">
         <legend className="text-sm font-semibold">Tipografia</legend>
         {([ ["display", "Fonte dos títulos"], ["body", "Fonte dos textos"], ["hand", "Fonte decorativa"] ] as const).map(([field, label]) => {
@@ -78,7 +85,7 @@ function AppearanceFields({ document, dispatch, errors, onValidate }: PanelProps
   );
 }
 
-function HeroFields({ document, dispatch, errors, onValidate }: PanelProps) {
+function HeroFields({ document, dispatch, errors, onValidate, temporaryImages }: PanelProps) {
   const common = { errors, onValidate };
   const { content } = document;
   return (
@@ -96,6 +103,7 @@ function HeroFields({ document, dispatch, errors, onValidate }: PanelProps) {
         <TextField {...common} path="content.hero.secondaryCtaLabel" label="Botão secundário da abertura" value={content.hero.secondaryCtaLabel} onChange={value => dispatch({ type: "hero", field: "secondaryCtaLabel", value })} />
       </fieldset>
       <HeroDetailsFields {...{ document, dispatch, errors, onValidate }} />
+      <EditorImagePicker {...{ document, dispatch, errors, onValidate, temporaryImages }} target={{ kind: "hero" }} label="Imagem principal" />
     </div>
   );
 }
@@ -139,6 +147,7 @@ export function HamburgueriaEditorPanel({ selectedSection, onSelectSection, ...p
     <aside className="flex min-h-0 flex-col border-r border-sidebar-hover bg-card max-md:border-r-0 max-md:border-b" aria-label="Configurações do protótipo">
       <div className="border-b border-sidebar-hover px-4 pt-5">
         <h2 className="text-sm font-semibold">Personalizar página</h2>
+        {props.temporaryImages && <p className="mt-2 text-xs leading-relaxed text-amber-300">{TEMPORARY_IMAGE_NOTICE}</p>}
         <label htmlFor="editor-panel-section" className="mt-4 block text-xs text-secundary">Seção da página</label>
         <select id="editor-panel-section" value={selectedSection} onChange={event => onSelectSection(event.target.value as EditorPanelSection)} className={`${inputClass} my-3`}>
           {editorSections.map(([key, label]) => <option key={key} value={key}>{label}{isContentSection(key) && !props.document.sections[key] ? " (oculta)" : ""}</option>)}

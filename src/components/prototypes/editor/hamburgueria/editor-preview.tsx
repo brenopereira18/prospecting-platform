@@ -6,6 +6,7 @@ import { HamburgueriaRenderer } from "../../templates/hamburgueria/hamburgueria-
 import type { HamburgueriaPrototypeDocument } from "../../templates/hamburgueria/schema/hamburgueria.schema";
 import { connectPreviewFrame } from "./preview-frame";
 import { getPreviewSectionId, selectPreviewSection, type EditorPanelSection } from "./editor-navigation";
+import type { ResolvedUploadImages } from "../../templates/hamburgueria/lib/images";
 
 export type EditorViewport = "desktop" | "mobile";
 
@@ -52,10 +53,11 @@ class PreviewErrorBoundary extends Component<{ children: ReactNode; onRetry: () 
   }
 }
 
-export function HamburgueriaEditorPreview({ document: prototypeDocument, viewport, selectedSection }: {
+export function HamburgueriaEditorPreview({ document: prototypeDocument, viewport, selectedSection, uploads = {} }: {
   document: HamburgueriaPrototypeDocument;
   viewport: EditorViewport;
   selectedSection: EditorPanelSection;
+  uploads?: ResolvedUploadImages;
 }) {
   const [frameBody, setFrameBody] = useState<HTMLElement | null>(null);
   const [error, setError] = useState<Error | null>(null);
@@ -138,7 +140,7 @@ export function HamburgueriaEditorPreview({ document: prototypeDocument, viewpor
             className="block h-full w-full border-0" />
           {frameBody && !error && createPortal(
         <div onClick={handleAnchorClick}>
-          <HamburgueriaRenderer document={prototypeDocument} />
+          <HamburgueriaRenderer document={prototypeDocument} resolveUpload={assetId => uploads[assetId]} />
         </div>,
         frameBody,
           )}

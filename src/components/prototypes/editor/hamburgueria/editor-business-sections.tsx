@@ -7,6 +7,7 @@ import { PriceField } from "./editor-number-fields";
 import { EditorCheck, SectionTextFields } from "./editor-section-fields";
 import { sectionField } from "./editor-section-document";
 import { BusinessNameField, OrderChannelFields } from "./editor-shared-fields";
+import { EditorImagePicker } from "./editor-image-picker";
 
 export function StoryFields(props: PanelProps) {
   return <div className="space-y-6">
@@ -19,7 +20,7 @@ export function StoryFields(props: PanelProps) {
     <details className="space-y-4"><summary className="cursor-pointer text-sm">Parágrafos</summary><StringCollection {...props} list="paragraphs" /></details>
     <details className="space-y-4"><summary className="cursor-pointer text-sm">Oferta em destaque</summary>
       <p className="text-xs leading-relaxed text-secundary">{props.document.content.story.featured.productId
-        ? "O preço acompanha o produto vinculado no Cardápio. A imagem e o vínculo serão preservados."
+        ? "O preço acompanha o produto vinculado no Cardápio. A imagem da oferta é independente da foto do produto."
         : "Sem produto vinculado. Os textos são preservados, mas a oferta não aparece na prévia."}</p>
       <SectionTextFields {...props} fields={[
         ["content.story.featured.eyebrow", "Texto de abertura da oferta"], ["content.story.featured.headline.0", "Título da oferta · linha 1"],
@@ -27,6 +28,7 @@ export function StoryFields(props: PanelProps) {
         ["content.story.featured.description.0", "Descrição da oferta · linha 1"], ["content.story.featured.description.1", "Descrição da oferta · linha 2"],
         ["content.story.featured.priceLabel", "Chamada do preço"], ["content.story.featured.ctaLabel", "Botão da oferta"],
       ]} />
+      <EditorImagePicker {...props} target={{ kind: "story" }} label="Imagem da oferta em destaque" />
     </details>
 
   </div>;
@@ -80,6 +82,7 @@ function LocationServiceFields(props: PanelProps) {
 export function LocationFields(props: PanelProps) {
   return <div className="space-y-6">
     <h2 className="text-sm font-semibold">Localização</h2>
+    <EditorImagePicker {...props} target={{ kind: "location" }} label="Foto do espaço" />
     <BusinessNameField {...props} />
     <SectionTextFields {...props} fields={[
       ["business.address.street", "Rua e número"], ["business.address.neighborhood", "Bairro"], ["business.address.city", "Cidade"],

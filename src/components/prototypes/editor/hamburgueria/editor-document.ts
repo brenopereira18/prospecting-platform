@@ -1,6 +1,7 @@
 import { hexColorSchema } from "../../schemas/prototype-base.schema";
 import { reduceEditorMenu, type EditorMenuAction } from "./editor-menu-document";
 import { reduceEditorSections, type EditorSectionAction } from "./editor-section-document";
+import { reduceEditorImages, type EditorImageAction } from "./editor-images";
 import { brasaBurgerDefaultDocument } from "../../templates/hamburgueria/data/default-document";
 import {
   hamburgueriaPrototypeDocumentSchema,
@@ -18,6 +19,7 @@ export type EditorErrors = Record<string, string>;
 export type EditorDocumentAction =
   | EditorMenuAction
   | EditorSectionAction
+  | EditorImageAction
   | { type: "color"; field: ColorField; value: string }
   | { type: "font"; field: FontField; value: FontKey }
   | { type: "business"; field: "name" | "tagline"; value: string }
@@ -69,6 +71,7 @@ export function editorDocumentReducer(
     case "reset":
       return createEditorDocument();
     default:
+      if (action.type.startsWith("image/")) return reduceEditorImages(document, action as EditorImageAction);
       return action.type.startsWith("menu/")
         ? reduceEditorMenu(document, action as EditorMenuAction)
         : reduceEditorSections(document, action as EditorSectionAction);
