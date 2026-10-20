@@ -1,3 +1,4 @@
+import "../../templates/hamburgueria/lib/image-test-loader";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { renderToStaticMarkup } from "react-dom/server";

@@ -3,12 +3,14 @@
 import type { Dispatch, ReactNode, ChangeEvent } from "react";
 import type { HamburgueriaPrototypeDocument } from "../../templates/hamburgueria/schema/hamburgueria.schema";
 import type { EditorDocumentAction, EditorErrors } from "./editor-document";
+import type { TemporaryImagesController } from "./use-temporary-images";
 
 export interface PanelProps {
   document: HamburgueriaPrototypeDocument;
   dispatch: Dispatch<EditorDocumentAction>;
   errors: EditorErrors;
   onValidate: () => void;
+  temporaryImages?: TemporaryImagesController;
 }
 
 export const inputClass = "min-h-10 w-full min-w-0 rounded-lg border border-sidebar-hover bg-background px-3 py-2 text-sm text-foreground outline-none placeholder:text-secundary/60 focus:border-primary focus:ring-2 focus:ring-primary/15 aria-invalid:border-red-400";

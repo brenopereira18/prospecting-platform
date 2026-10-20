@@ -1,5 +1,7 @@
 "use client";
 
+import { EditorImagePicker } from "./editor-image-picker";
+
 import { useRef, useState } from "react";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 import { HAMBURGUERIA_ICON_KEYS, HAMBURGUERIA_MENU_LIMITS } from "../../templates/hamburgueria/schema/hamburgueria.schema";
@@ -38,7 +40,7 @@ function ItemList({ items, selectedId, onSelect, onMove, onDelete }: {
   );
 }
 
-function ProductFields({ product, index, document, dispatch, errors, onValidate }: PanelProps & { product: MenuProduct; index: number }) {
+function ProductFields({ product, index, document, dispatch, errors, onValidate, temporaryImages }: PanelProps & { product: MenuProduct; index: number }) {
   const path = `content.menu.products.${index}`;
   const common = { errors, onValidate };
   const edit = (changes: Partial<Pick<MenuProduct, "name" | "description" | "priceCents" | "categoryId" | "badge" | "allergens" | "vegetarian" | "icon">>) => dispatch({ type: "menu/product/edit", id: product.id, changes });
@@ -70,7 +72,8 @@ function ProductFields({ product, index, document, dispatch, errors, onValidate 
           {HAMBURGUERIA_ICON_KEYS.map(icon => <option key={icon} value={icon}>{icon}</option>)}
         </select>
       </Field>
-      {product.image && <p className="text-xs leading-relaxed text-secundary">A imagem existente será preservada. O ícone aparece nos produtos sem imagem.</p>}
+      <EditorImagePicker {...{ document, dispatch, errors, onValidate, temporaryImages }} target={{ kind: "product", productId: product.id }} label="Imagem do produto" />
+      {product.image && <p className="text-xs leading-relaxed text-secundary">O ícone aparece nos produtos sem imagem.</p>}
     </fieldset>
   );
 }
