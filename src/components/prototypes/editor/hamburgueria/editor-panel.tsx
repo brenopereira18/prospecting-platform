@@ -1,79 +1,41 @@
 "use client";
 
-import { useState, type Dispatch, type ReactNode } from "react";
 import {
   HAMBURGUERIA_FONT_KEYS,
-  type HamburgueriaPrototypeDocument,
   type HamburgueriaSectionId,
 } from "../../templates/hamburgueria/schema/hamburgueria.schema";
 import {
   getColorPickerValue,
-  type EditorDocumentAction,
-  type EditorErrors,
   type FontKey,
 } from "./editor-document";
 
-interface PanelProps {
-  document: HamburgueriaPrototypeDocument;
-  dispatch: Dispatch<EditorDocumentAction>;
-  errors: EditorErrors;
-  onValidate: () => void;
-}
+import { Field, TextField, fieldId, inputClass, type PanelProps } from "./editor-fields";
+import { EditorMenuPanel } from "./editor-menu-panel";
+import { ReviewsFields, FaqFields, QualitiesFields } from "./editor-social-sections";
+import { StoryFields, ServiceFields, LocationFields } from "./editor-business-sections";
+import { FooterFields, HeroDetailsFields, FinalCallToActionFields } from "./editor-commercial-sections";
+import { BrandFields } from "./editor-shared-fields";
+import { NumberField } from "./editor-number-fields";
+import { sectionField } from "./editor-section-document";
+import { editorSections, isContentSection, type EditorPanelSection } from "./editor-navigation";
+import { getWhatsAppUrl } from "../../templates/hamburgueria/lib/format";
 
-const inputClass = "min-h-10 w-full min-w-0 rounded-lg border border-sidebar-hover bg-background px-3 py-2 text-sm text-foreground outline-none placeholder:text-secundary/60 focus:border-primary focus:ring-2 focus:ring-primary/15 aria-invalid:border-red-400";
 const fontNames: Record<FontKey, string> = {
   barlow: "Barlow",
   "barlow-condensed": "Barlow Condensed",
   caveat: "Caveat",
 };
 const sectionNames = {
-  hero: "Abertura (Hero)",
-  qualities: "Qualidades",
+  hero: "Início / Hero",
+  qualities: "Diferenciais",
   menu: "Cardápio",
-  story: "História e destaque",
-  howToOrder: "Como pedir",
+  story: "Nossa História",
+  howToOrder: "Como Pedir",
   reviews: "Avaliações",
   location: "Localização",
-  faq: "Dúvidas frequentes",
-  finalCallToAction: "Chamada final",
+  faq: "Perguntas Frequentes",
+  finalCallToAction: "Chamada Final",
 } satisfies Record<HamburgueriaSectionId, string>;
-
-function fieldId(path: string) {
-  return `editor-${path.replaceAll(".", "-")}`;
-}
-
-function Field({ path, label, error, children }: {
-  path: string; label: string; error?: string; children: ReactNode;
-}) {
-  return (
-    <div className="space-y-2">
-      <label htmlFor={fieldId(path)} className="block text-xs font-medium text-foreground">{label}</label>
-      {children}
-      {error && <p id={`${fieldId(path)}-error`} className="text-xs leading-relaxed text-red-300">{error}</p>}
-    </div>
-  );
-}
-
-function TextField({ path, label, value, onChange, multiline, inputMode, errors, onValidate }: {
-  path: string; label: string; value: string; onChange: (value: string) => void;
-  multiline?: boolean; inputMode?: "tel" | "url";
-  errors: EditorErrors; onValidate: () => void;
-}) {
-  const props = {
-    id: fieldId(path),
-    value,
-    className: inputClass,
-    onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => onChange(event.target.value),
-    onBlur: onValidate,
-    "aria-invalid": Boolean(errors[path]),
-    "aria-describedby": errors[path] ? `${fieldId(path)}-error` : undefined,
-  };
-  return (
-    <Field path={path} label={label} error={errors[path]}>
-      {multiline ? <textarea {...props} rows={2} /> : <input {...props} type="text" inputMode={inputMode} />}
-    </Field>
-  );
-}
 
 function AppearanceFields({ document, dispatch, errors, onValidate }: PanelProps) {
   return (
@@ -116,17 +78,12 @@ function AppearanceFields({ document, dispatch, errors, onValidate }: PanelProps
   );
 }
 
-function ContentFields({ document, dispatch, errors, onValidate }: PanelProps) {
+function HeroFields({ document, dispatch, errors, onValidate }: PanelProps) {
   const common = { errors, onValidate };
-  const { business, content, contact } = document;
+  const { content } = document;
   return (
     <div className="space-y-7">
-      <fieldset className="space-y-4">
-        <legend className="mb-4 text-sm font-semibold">Estabelecimento</legend>
-        <TextField {...common} path="business.name" label="Nome do estabelecimento" value={business.name} onChange={value => dispatch({ type: "business", field: "name", value })} />
-        <TextField {...common} path="business.tagline" label="Slogan" value={business.tagline} onChange={value => dispatch({ type: "business", field: "tagline", value })} />
-        {([0, 1] as const).map(index => <TextField {...common} key={index} path={`business.brandLines.${index}`} label={`Marca · linha ${index + 1}`} value={business.brandLines[index]} onChange={value => dispatch({ type: "brandLine", index, value })} />)}
-      </fieldset>
+
       <fieldset className="space-y-4 border-t border-sidebar-hover pt-5">
         <legend className="text-sm font-semibold">Abertura</legend>
         <TextField {...common} path="content.hero.eyebrow" label="Texto de abertura" value={content.hero.eyebrow} onChange={value => dispatch({ type: "hero", field: "eyebrow", value })} />
@@ -135,20 +92,22 @@ function ContentFields({ document, dispatch, errors, onValidate }: PanelProps) {
       </fieldset>
       <fieldset className="space-y-4 border-t border-sidebar-hover pt-5">
         <legend className="text-sm font-semibold">Botões principais</legend>
-        <TextField {...common} path="content.header.menuButtonLabel" label="Botão do cabeçalho" value={content.header.menuButtonLabel} onChange={value => dispatch({ type: "headerButton", value })} />
         <TextField {...common} path="content.hero.primaryCtaLabel" label="Botão principal da abertura" value={content.hero.primaryCtaLabel} onChange={value => dispatch({ type: "hero", field: "primaryCtaLabel", value })} />
         <TextField {...common} path="content.hero.secondaryCtaLabel" label="Botão secundário da abertura" value={content.hero.secondaryCtaLabel} onChange={value => dispatch({ type: "hero", field: "secondaryCtaLabel", value })} />
-        <TextField {...common} path="content.finalCallToAction.buttonLabel" label="Botão da chamada final" value={content.finalCallToAction.buttonLabel} onChange={value => dispatch({ type: "finalButton", value })} />
       </fieldset>
-      <fieldset className="space-y-4 border-t border-sidebar-hover pt-5">
-        <legend className="text-sm font-semibold">Contato</legend>
-        <TextField {...common} path="contact.whatsapp" label="WhatsApp com DDI e DDD" inputMode="tel" value={contact.whatsapp ?? ""} onChange={value => dispatch({ type: "contact", field: "whatsapp", value })} />
-        <TextField {...common} path="contact.instagramUrl" label="Link do Instagram" inputMode="url" value={contact.instagramUrl ?? ""} onChange={value => dispatch({ type: "contact", field: "instagramUrl", value })} />
-        <TextField {...common} path="contact.instagramLabel" label="Nome exibido no Instagram" value={contact.instagramLabel ?? ""} onChange={value => dispatch({ type: "contact", field: "instagramLabel", value })} />
-        <TextField {...common} path="contact.mapsUrl" label="Link do mapa" inputMode="url" value={contact.mapsUrl ?? ""} onChange={value => dispatch({ type: "contact", field: "mapsUrl", value })} />
-      </fieldset>
+      <HeroDetailsFields {...{ document, dispatch, errors, onValidate }} />
     </div>
   );
+}
+
+function HeaderFields(props: PanelProps) {
+  return <div className="space-y-6">
+    <h2 className="text-sm font-semibold">Cabeçalho</h2>
+    <BrandFields {...props} />
+    <NumberField {...props} path="business.foundedYear" label="Ano exibido em Desde" value={props.document.business.foundedYear} min={1800} max={2200} integer onChange={value => props.dispatch(sectionField("business.foundedYear", value))} />
+    <TextField {...props} path="content.header.menuButtonLabel" label="Botão do cabeçalho" value={props.document.content.header.menuButtonLabel} onChange={value => props.dispatch({ type: "headerButton", value })} />
+    <p className="text-xs text-secundary">Os links da navegação acompanham as seções habilitadas em Visibilidade.</p>
+  </div>;
 }
 
 function SectionFields({ document, dispatch }: PanelProps) {
@@ -170,24 +129,45 @@ function SectionFields({ document, dispatch }: PanelProps) {
   );
 }
 
-export function HamburgueriaEditorPanel(props: PanelProps) {
-  const [tab, setTab] = useState<"appearance" | "content" | "sections">("appearance");
+export function HamburgueriaEditorPanel({ selectedSection, onSelectSection, ...props }: PanelProps & {
+  selectedSection: EditorPanelSection;
+  onSelectSection: (section: EditorPanelSection) => void;
+}) {
   const errorCount = Object.keys(props.errors).length;
+  const contentSection = isContentSection(selectedSection) ? selectedSection : null;
   return (
     <aside className="flex min-h-0 flex-col border-r border-sidebar-hover bg-card max-md:border-r-0 max-md:border-b" aria-label="Configurações do protótipo">
       <div className="border-b border-sidebar-hover px-4 pt-5">
         <h2 className="text-sm font-semibold">Personalizar página</h2>
-        <div className="mt-4 flex gap-4" role="group" aria-label="Painel de edição">
-          {([ ["appearance", "Aparência"], ["content", "Conteúdo"], ["sections", "Seções"] ] as const).map(([key, label]) => (
-            <button type="button" key={key} aria-pressed={tab === key} onClick={() => setTab(key)}
-              className={`min-h-10 border-b-2 pb-2 text-xs font-medium focus-visible:outline-2 focus-visible:outline-primary ${tab === key ? "border-primary text-primary" : "border-transparent text-secundary hover:text-foreground"}`}>{label}</button>
-          ))}
-        </div>
+        <label htmlFor="editor-panel-section" className="mt-4 block text-xs text-secundary">Seção da página</label>
+        <select id="editor-panel-section" value={selectedSection} onChange={event => onSelectSection(event.target.value as EditorPanelSection)} className={`${inputClass} my-3`}>
+          {editorSections.map(([key, label]) => <option key={key} value={key}>{label}{isContentSection(key) && !props.document.sections[key] ? " (oculta)" : ""}</option>)}
+        </select>
+        {!getWhatsAppUrl(props.document.contact.whatsapp ?? "", "") && <p role="status" className="mb-4 text-xs leading-relaxed text-amber-300">
+          WhatsApp não configurado ou inválido. Os pedidos estão desativados. Informe o número com DDI e DDD em Como Pedir → Canal de pedidos.
+        </p>}
       </div>
-      <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto p-5">
-        {tab === "appearance" && <AppearanceFields {...props} />}
-        {tab === "content" && <ContentFields {...props} />}
-        {tab === "sections" && <SectionFields {...props} />}
+      <div key={selectedSection} className="custom-scrollbar min-h-0 flex-1 overflow-y-auto p-5">
+        {contentSection && <div className="mb-5 space-y-2 border-b border-sidebar-hover pb-4">
+          <label className="flex items-center justify-between gap-3 text-sm">
+            Exibir esta seção
+            <input type="checkbox" checked={props.document.sections[contentSection]} onChange={event => props.dispatch({ type: "section", field: contentSection, value: event.target.checked })} className="h-4 w-4 accent-primary" />
+          </label>
+          {!props.document.sections[contentSection] && <p className="text-xs text-secundary">Seção oculta na prévia. Você pode editar o conteúdo e reativá-la aqui.</p>}
+        </div>}
+        {selectedSection === "appearance" && <AppearanceFields {...props} />}
+        {selectedSection === "header" && <HeaderFields {...props} />}
+        {selectedSection === "hero" && <HeroFields {...props} />}
+        {selectedSection === "menu" && <EditorMenuPanel {...props} />}
+        {selectedSection === "qualities" && <QualitiesFields {...props} />}
+        {selectedSection === "story" && <StoryFields {...props} />}
+        {selectedSection === "howToOrder" && <ServiceFields {...props} />}
+        {selectedSection === "reviews" && <ReviewsFields {...props} />}
+        {selectedSection === "location" && <LocationFields {...props} />}
+        {selectedSection === "faq" && <FaqFields {...props} />}
+        {selectedSection === "finalCallToAction" && <FinalCallToActionFields {...props} />}
+        {selectedSection === "footer" && <FooterFields {...props} />}
+        {selectedSection === "visibility" && <SectionFields {...props} />}
       </div>
       <div className="border-t border-sidebar-hover px-5 py-3 text-xs text-secundary" aria-live="polite">
         {errorCount ? <span className="text-red-300">{errorCount} {errorCount === 1 ? "campo para revisar" : "campos para revisar"}</span> : "Alterações apenas nesta sessão."}

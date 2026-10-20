@@ -138,7 +138,49 @@
     }
   }
 
+  .hamburgueria-template .reviews-loop {
+    container-type: inline-size;
+    --reviews-gap: 24px;
+    --reviews-card-width: calc((100cqw - 48px) / 3);
+  }
+
+  .hamburgueria-template .reviews-loop-viewport {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .hamburgueria-template .reviews-loop-viewport::-webkit-scrollbar { display: none; }
+  .hamburgueria-template .reviews-loop-track { display: flex; width: max-content; }
+  .hamburgueria-template .reviews-loop-group {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: var(--reviews-card-width);
+    gap: var(--reviews-gap);
+    padding-right: var(--reviews-gap);
+  }
+  .hamburgueria-template .reviews-loop[data-looping="true"] .reviews-loop-track {
+    animation: hamburgueria-reviews-loop var(--reviews-duration) linear infinite;
+  }
+  .hamburgueria-template .reviews-loop-viewport:focus-within .reviews-loop-track {
+    animation-play-state: paused;
+  }
+  @keyframes hamburgueria-reviews-loop {
+    from { transform: translateX(-50%); }
+    to { transform: translateX(0); }
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .hamburgueria-template .reviews-loop-viewport:hover .reviews-loop-track { animation-play-state: paused; }
+  }
+  @media (max-width: 900px) {
+    .hamburgueria-template .reviews-loop { --reviews-gap: 15px; --reviews-card-width: calc((100cqw - 15px) / 2); }
+  }
+  @media (max-width: 700px) {
+    .hamburgueria-template .reviews-loop { --reviews-gap: 16px; --reviews-card-width: 86cqw; }
+  }
   @media (prefers-reduced-motion: reduce) {
+    .hamburgueria-template .reviews-loop-copy,
+    .hamburgueria-template .reviews-loop-group > [aria-hidden="true"] { display: none; }
     .hamburgueria-template *,
     .hamburgueria-template *::before,
     .hamburgueria-template *::after {

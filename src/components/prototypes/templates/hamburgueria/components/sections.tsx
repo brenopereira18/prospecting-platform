@@ -1,8 +1,9 @@
 import { SectionLink } from "./section-link";
 import { TemplateImage } from "./template-image";
-import { Fragment } from "react";
+import { TextLines } from "./text-lines";
+import { ReviewsLoop } from "./reviews-loop";
 import type { HamburgueriaPrototypeDocument } from "../schema/hamburgueria.schema";
-import { sectionAnchors } from "../lib/navigation";
+import { sectionAnchors, structuralSectionIds } from "../lib/navigation";
 import { RatingStars } from "./rating-stars";
 import { formatCopy, formatPriceCents, formatPriceParts } from "../lib/format";
 
@@ -50,27 +51,24 @@ export function Hero({ document }: SectionProps) {
             "hero-copy relative [padding:35px_0_50px] [z-index:2] [max-width:650px] max-[900px]:[max-width:480px] max-[700px]:[padding:31px_0_0] max-[700px]:max-w-full max-[700px]:w-full"
           }
         >
-          <p
+          {hero.eyebrow.trim() && (<p
             className={
               "handwritten [font-family:var(--hand)] [font-size:29px] [line-height:1.3] [color:var(--yellow-dark)] [margin-bottom:7px] max-[700px]:[font-size:26px]"
             }
           >
             {hero.eyebrow}
-          </p>
+          </p>)}
           <h1 id="hero-title">
             {hero.headline[0]}
-            <br />
-            <span>{hero.headline[1]}</span>
+            {hero.headline[1].trim() && <><br /><span>{hero.headline[1]}</span></>}
           </h1>
-          <p
+          {hero.description.some(line => line.trim()) && (<p
             className={
               "hero-description [margin-top:27px] [color:#e4e1d8] [font-size:17px] [line-height:1.65] max-[1150px]:[font-size:16px] max-[900px]:[max-width:335px] max-[700px]:[max-width:360px] max-[700px]:[font-size:14px] max-[700px]:[margin-top:20px] max-[700px]:[line-height:1.7]"
             }
           >
-            {hero.description[0]}
-            <br className={"desktop-break max-[900px]:hidden"} />
-            {hero.description[1]}
-          </p>
+            <TextLines lines={hero.description} breakClassName="desktop-break max-[900px]:hidden" />
+          </p>)}
           <div
             className={
               "hero-actions flex [gap:13px] [margin-top:29px] max-[700px]:[margin-top:23px] max-[700px]:[gap:9px] max-[700px]:[&_.button]:[font-size:16px] max-[700px]:[&_.button]:[padding:12px_16px] max-[700px]:[&_.button]:[min-height:47px] max-[700px]:[&_.button_svg]:[width:18px] max-[360px]:[&_.button]:[font-size:15px] max-[360px]:[&_.button]:[padding:12px] max-[360px]:[&_svg]:hidden"
@@ -114,14 +112,14 @@ export function Hero({ document }: SectionProps) {
               locale={locale}
             />
             <strong>{reviews.rating.toLocaleString(locale)}</strong>
-            <span>
+            {hero.reviewCountLabel.trim() && (<span>
               {formatCopy(hero.reviewCountLabel, {
                 count: reviews.count.toLocaleString(locale),
               })}
               {demo.enabled && "*"}
-            </span>
+            </span>)}
           </SectionLink>
-          <p
+          {Boolean(hero.hoursSummary.trim() || hero.serviceSummary.trim()) && (<p
             className={
               "hero-service flex items-center gap-2 [font-size:12px] [color:#bdb9ad] [margin-top:14px] [&_svg]:[width:15px] [&_svg]:[height:15px] [&_>_span]:[height:3px] [&_>_span]:[width:3px] [&_>_span]:[background:var(--yellow)] [&_>_span]:rounded-full [&_>_span]:[margin:0_3px] max-[700px]:[font-size:10px] max-[700px]:[margin-top:10px] max-[700px]:[gap:5px]"
             }
@@ -129,33 +127,29 @@ export function Hero({ document }: SectionProps) {
             <svg>
               <use href="#i-clock" />
             </svg>{" "}
-            {hero.hoursSummary} <span></span> {hero.serviceSummary}
-          </p>
+            {hero.hoursSummary} {hero.hoursSummary.trim() && hero.serviceSummary.trim() && <span aria-hidden="true" />} {hero.serviceSummary}
+          </p>)}
         </div>
-        <div
+        {[hero.badgeText, ...hero.badgeLines].some(line => line.trim()) && (<div
           className={
             "hero-stamp absolute [right:0] [bottom:35px] [width:136px] [height:136px] [background:#111110ec] [border:2px_solid_#b88c16] rounded-full [color:var(--yellow)] flex flex-col items-center justify-center [transform:rotate(-11deg)] [outline:1px_solid_#7f6218] [outline-offset:-8px] [box-shadow:0_5px_25px_#0007] [&_span]:[font:600_23px_var(--display)] [&_strong]:[font:700_24px/1_var(--display)] [&_strong]:[text-align:center] [&_svg]:[height:24px] [&_svg]:[margin-top:5px] max-[900px]:[width:115px] max-[900px]:[height:115px] max-[900px]:[right:-8px] max-[900px]:[&_strong]:[font-size:21px] max-[900px]:[&_span]:[font-size:21px] max-[700px]:[bottom:26px] max-[700px]:[right:2px] max-[700px]:[width:104px] max-[700px]:[height:104px] max-[700px]:[background:#111110ec] max-[700px]:[&_strong]:[font-size:19px] max-[700px]:[&_span]:[font-size:18px] max-[700px]:[&_svg]:[height:20px]"
           }
           aria-label={[hero.badgeText, ...hero.badgeLines].join(" ")}
         >
-          <span>{hero.badgeText}</span>
-          <strong>
-            {hero.badgeLines[0]}
-            <br />
-            {hero.badgeLines[1]}
-          </strong>
+          {hero.badgeText.trim() && (<span>{hero.badgeText}</span>)}
+          {hero.badgeLines.some(line => line.trim()) && <strong><TextLines lines={hero.badgeLines} /></strong>}
           <svg>
             <use href="#i-fire" />
           </svg>
-        </div>
+        </div>)}
       </div>
-      <div
+      {hero.bottomNote.trim() && (<div
         className={
           "hero-bottom absolute [bottom:16px] [right:calc((100%_-_min(1240px,_100%_-_88px))_/_2_+_166px)] [font-family:var(--hand)] [font-size:20px] [color:#d9c693] [transform:rotate(-3deg)] max-[1150px]:hidden"
         }
       >
         {hero.bottomNote}
-      </div>
+      </div>)}
     </section>
   );
 }
@@ -182,7 +176,7 @@ export function Qualities({ document }: SectionProps) {
             <Icon name={item.icon} />
             <p>
               <strong>{item.title}</strong>
-              <span>{item.description}</span>
+              {item.description.trim() && (<span>{item.description}</span>)}
             </p>
           </div>
         ))}
@@ -207,11 +201,11 @@ export function Story({ document }: SectionProps) {
   return (
     <section
       className={
-        "combo-story grid [grid-template-columns:1fr_1fr] max-[700px]:[grid-template-columns:1fr]"
+        `combo-story grid ${featuredProduct ? "[grid-template-columns:1fr_1fr]" : "[grid-template-columns:1fr]"} max-[700px]:[grid-template-columns:1fr]`
       }
       id="nossa-historia"
     >
-      <div
+      {featuredProduct && <div
         className={
           "combo-panel [background:#0c0c0b] relative overflow-hidden [color:white] [min-height:510px] [&_>_.template-image]:absolute [&_>_.template-image]:[inset:0] [&_>_.template-image]:w-full [&_>_.template-image]:h-full [&_>_.template-image]:object-cover [&_>_.template-image]:[object-position:25%_60%] max-[700px]:[min-height:485px] max-[700px]:[&_>_.template-image]:[object-position:20%_60%] max-[700px]:[&_>_.template-image]:w-full"
         }
@@ -232,32 +226,26 @@ export function Story({ document }: SectionProps) {
             "combo-copy relative [width:49%] [margin-left:48%] [padding:45px_24px_48px_0] [&_.handwritten]:[color:var(--yellow)] [&_.handwritten]:[font-size:26px] [&_h2]:[font-size:clamp(36px,_4vw,_58px)] [&_h2]:[margin:10px_0_17px] [&_h2]:[line-height:0.97] [&_>_p:not(.handwritten)]:[font-size:14px] [&_>_p:not(.handwritten)]:[color:#ccc8bd] [&_.button]:[padding:12px_16px] [&_.button]:[font-size:17px] max-[900px]:[margin-left:38%] max-[900px]:[width:62%] max-[900px]:[padding-left:10px] max-[900px]:[&_h2]:[font-size:45px] max-[700px]:[width:53%] max-[700px]:[margin-left:47%] max-[700px]:[padding:35px_20px_36px_0] max-[700px]:[&_h2]:[font-size:51px] max-[700px]:[&_.handwritten]:[font-size:25px] max-[700px]:[&_.button]:[font-size:15px] max-[700px]:[&_.button]:[padding:12px] max-[700px]:[&_.button_svg]:[width:16px] max-[360px]:[margin-left:43%] max-[360px]:[width:57%] max-[360px]:[&_h2]:[font-size:47px]"
           }
         >
-          <p
+          {featured.eyebrow.trim() && (<p
             className={
               "handwritten [font-family:var(--hand)] [font-size:29px] [line-height:1.3] [color:var(--yellow-dark)] [margin-bottom:7px] max-[700px]:[font-size:26px]"
             }
           >
             {featured.eyebrow}
-          </p>
+          </p>)}
           <h2>
-            {featured.headline[0]}
-            <br />
-            {featured.headline[1]}
-            <br />
-            {featured.headline[2]}
+            <TextLines lines={featured.headline} />
           </h2>
-          <p>
-            {featured.description[0]}
-            <br />
-            {featured.description[1]}
-          </p>
+          {featured.description.some(line => line.trim()) && (<p>
+            <TextLines lines={featured.description} />
+          </p>)}
           {featuredProduct && priceParts && (
             <div
               className={
                 "combo-price flex flex-col [margin:16px_0_20px] [&_small]:[font-size:12px] [&_small]:[color:#c6c0ae] [&_strong]:[font:700_49px/1_var(--display)] [&_strong]:[color:var(--yellow)] [&_strong_span]:[font-size:30px]"
               }
             >
-              <small>{featured.priceLabel}</small>
+              {featured.priceLabel.trim() && (<small>{featured.priceLabel}</small>)}
               <strong>
                 {priceParts.main}
                 <span>{priceParts.fraction}</span>
@@ -276,30 +264,26 @@ export function Story({ document }: SectionProps) {
             </svg>
           </ComboLink>
         </div>
-      </div>
+      </div>}
       <div
         className={
           "story-panel [background:var(--yellow)] [padding:49px_clamp(32px,_5vw,_78px)] relative overflow-hidden [&_.handwritten]:[color:#70520f] [&_h2]:[font-size:clamp(40px,_4.1vw,_60px)] [&_h2]:[margin:14px_0_22px] [&_>_p:not(.handwritten)]:[max-width:430px] [&_>_p:not(.handwritten)]:[font-size:15px] [&_>_p:not(.handwritten)]:[line-height:1.65] [&_>_p:not(.handwritten)]:[margin-top:13px] max-[900px]:[padding:40px_30px] max-[900px]:[&_h2]:[font-size:46px] max-[900px]:[&_>_p:not(.handwritten)]:[font-size:14px] max-[700px]:[padding:38px_28px_40px] max-[700px]:[&_h2]:[font-size:53px] max-[700px]:[&_>_p:not(.handwritten)]:[font-size:15px] max-[700px]:[&_>_p:not(.handwritten)]:[max-width:100%]"
         }
       >
-        <p
+        {story.eyebrow.trim() && (<p
           className={
             "handwritten [font-family:var(--hand)] [font-size:29px] [line-height:1.3] [color:var(--yellow-dark)] [margin-bottom:7px] max-[700px]:[font-size:26px]"
           }
         >
           {story.eyebrow}
-        </p>
+        </p>)}
         <h2>
-          {story.headline[0]}
-          <br />
-          {story.headline[1]}
-          <br />
-          {story.headline[2]}
+          <TextLines lines={story.headline} />
         </h2>
-        {story.paragraphs.map((paragraph) => (
-          <p key={paragraph}>{paragraph}</p>
+        {story.paragraphs.filter(paragraph => paragraph.trim()).map((paragraph, index) => (
+          <p key={index}>{paragraph}</p>
         ))}
-        <div
+        {story.signature.some(line => line.trim()) && (<div
           className={
             "story-signature flex items-center gap-4 [margin-top:29px] [border-top:1px_solid_#15151538] [padding-top:20px] [max-width:430px] [&_svg]:[width:42px] [&_svg]:[height:42px] [&_span]:[font-family:var(--hand)] [&_span]:[font-size:24px] [&_span]:[line-height:1.05] max-[700px]:[max-width:100%]"
           }
@@ -309,10 +293,10 @@ export function Story({ document }: SectionProps) {
           </svg>
           <span>
             {story.signature[0]}
-            <br />
-            <strong>{story.signature[1]}</strong>
+            {story.signature[0].trim() && story.signature[1].trim() && <br />}
+            {story.signature[1].trim() && (<strong>{story.signature[1]}</strong>)}
           </span>
-        </div>
+        </div>)}
       </div>
     </section>
   );
@@ -342,13 +326,13 @@ export function HowToOrder({ document }: SectionProps) {
           }
         >
           <div>
-            <p
+            {howToOrder.eyebrow.trim() && (<p
               className={
                 "handwritten [font-family:var(--hand)] [font-size:29px] [line-height:1.3] [color:var(--yellow-dark)] [margin-bottom:7px] max-[700px]:[font-size:26px]"
               }
             >
               {howToOrder.eyebrow}
-            </p>
+            </p>)}
             <h2>{howToOrder.title}</h2>
           </div>
         </div>
@@ -368,12 +352,12 @@ export function HowToOrder({ document }: SectionProps) {
               </span>
               <div>
                 <h3>{step.title}</h3>
-                <p>
+                {step.body.trim() && (<p>
                   {formatCopy(step.body, {
                     deliveryEstimate: service.delivery.estimate,
                     pickupEstimate: service.delivery.pickupEstimate,
                   })}
-                </p>
+                </p>)}
               </div>
             </article>
           ))}
@@ -396,7 +380,7 @@ export function HowToOrder({ document }: SectionProps) {
               )}
             </span>
           )}
-          {service.modes.pickup && (
+          {service.modes.pickup && service.pickupFeeText.trim() && (
             <span>
               <svg>
                 <use href="#i-bag" />
@@ -404,12 +388,12 @@ export function HowToOrder({ document }: SectionProps) {
               {service.pickupFeeText}
             </span>
           )}
-          <span>
+          {service.paymentMethodsText.trim() && <span>
             <svg>
               <use href="#i-check" />
             </svg>{" "}
             {service.paymentMethodsText}
-          </span>
+          </span>}
           <SectionLink
             className={
               "text-link [border:0] [background:none] [padding:8px_0] inline-flex items-center gap-3 [font-size:15px] [font-weight:600] [&:hover]:[text-decoration:underline] [&_svg]:[width:20px]"
@@ -451,13 +435,13 @@ export function Reviews({ document }: SectionProps) {
           }
         >
           <div>
-            <p
+            {reviews.eyebrow.trim() && (<p
               className={
                 "handwritten [font-family:var(--hand)] [font-size:29px] [line-height:1.3] [color:var(--yellow-dark)] [margin-bottom:7px] max-[700px]:[font-size:26px]"
               }
             >
               {reviews.eyebrow}
-            </p>
+            </p>)}
             <h2>{reviews.title}</h2>
           </div>
           <div
@@ -478,20 +462,21 @@ export function Reviews({ document }: SectionProps) {
                 label={reviews.starsLabel}
                 locale={locale}
               />
-              <small>
+              {reviews.countLabel.trim() && (<small>
                 {formatCopy(reviews.countLabel, {
                   count: reviews.count.toLocaleString(locale),
                 })}
                 {demo.enabled && "*"}
-              </small>
+              </small>)}
             </div>
           </div>
         </div>
-        <div
+        <ReviewsLoop count={reviews.entries.length}
           className={
-            "reviews-grid grid [grid-template-columns:repeat(3,_1fr)] [gap:24px] [&_figure]:[margin:0] [&_figure]:[border:1px_solid_#ffffff20] [&_figure]:[padding:27px_26px] [&_figure]:[background:#ffffff03] [&_figure]:[border-radius:3px] [&_.stars]:[font-size:17px] [&_blockquote]:[margin:21px_0_25px] [&_blockquote]:[font-size:15px] [&_blockquote]:[line-height:1.8] [&_blockquote]:[color:#e3e0d5] [&_blockquote]:[min-height:108px] [&_figcaption]:flex [&_figcaption]:items-center [&_figcaption]:[gap:12px] [&_figure:nth-child(2)_.avatar]:[background:#a8b7a2] [&_figure:nth-child(3)_.avatar]:[background:#c8b0a0] [&_figcaption_strong]:[font-size:13px] [&_figcaption_strong]:block [&_figcaption_strong]:[font-weight:600] [&_figcaption_small]:[font-size:11px] [&_figcaption_small]:[color:#a7a194] [&_figcaption_small]:block [&_figcaption_svg]:ml-auto [&_figcaption_svg]:[color:var(--yellow)] [&_figcaption_svg]:[width:18px] max-[900px]:[gap:15px] max-[900px]:[&_figure]:[padding:23px_19px] max-[900px]:[&_blockquote]:[font-size:13px] max-[900px]:[&_blockquote]:[min-height:150px] max-[700px]:[grid-template-columns:1fr] max-[700px]:[gap:16px] max-[700px]:[&_figure]:[padding:24px] max-[700px]:[&_blockquote]:[min-height:0] max-[700px]:[&_blockquote]:[font-size:15px] max-[700px]:[&_blockquote]:[margin:18px_0_22px] max-[700px]:[&_figcaption_strong]:[font-size:14px] max-[700px]:[&_figcaption_small]:[font-size:12px]"
+            "reviews-grid [gap:24px] [&_figure]:[margin:0] [&_figure]:[border:1px_solid_#ffffff20] [&_figure]:[padding:18px_20px] [&_figure]:[background:#ffffff03] [&_figure]:[border-radius:3px] [&_.stars]:[font-size:17px] [&_blockquote]:[margin:12px_0_14px] [&_blockquote]:[font-size:15px] [&_blockquote]:[line-height:1.6] [&_blockquote]:[color:#e3e0d5] [&_blockquote]:[min-height:0] [&_figcaption]:flex [&_figcaption]:items-center [&_figcaption]:[gap:12px] [&_figure:nth-child(2)_.avatar]:[background:#a8b7a2] [&_figure:nth-child(3)_.avatar]:[background:#c8b0a0] [&_figcaption_strong]:[font-size:13px] [&_figcaption_strong]:block [&_figcaption_strong]:[font-weight:600] [&_figcaption_small]:[font-size:11px] [&_figcaption_small]:[color:#a7a194] [&_figcaption_small]:block [&_figcaption_svg]:ml-auto [&_figcaption_svg]:[color:var(--yellow)] [&_figcaption_svg]:[width:18px] max-[900px]:[gap:15px] max-[900px]:[&_figure]:[padding:16px_18px] max-[900px]:[&_blockquote]:[font-size:13px] max-[900px]:[&_blockquote]:[min-height:0] max-[700px]:[gap:16px] max-[700px]:[&_figure]:[padding:16px_18px] max-[700px]:[&_blockquote]:[min-height:0] max-[700px]:[&_blockquote]:[font-size:15px] max-[700px]:[&_blockquote]:[margin:12px_0_14px] max-[700px]:[&_figcaption_strong]:[font-size:14px] max-[700px]:[&_figcaption_small]:[font-size:12px]"
           }
         >
+          {!reviews.entries.length && <p role="status" className="py-6 text-sm">Nenhum depoimento disponível no momento.</p>}
           {reviews.entries.map((review) => (
             <figure key={review.id}>
               <RatingStars
@@ -525,13 +510,13 @@ export function Reviews({ document }: SectionProps) {
                       review.name
                     )}
                   </strong>
-                  <small>{review.role}</small>
+                  {review.role.trim() && (<small>{review.role}</small>)}
                 </span>
                 <Icon name="check" />
               </figcaption>
             </figure>
           ))}
-        </div>
+        </ReviewsLoop>
         {demo.enabled && (
           <p
             className={
@@ -572,19 +557,17 @@ export function Location({ document }: SectionProps) {
             "location-info [&_h2]:[font-size:clamp(36px,_3.7vw,_52px)] [&_>_p:not(.handwritten)]:[margin:22px_0] [&_>_p:not(.handwritten)]:[color:#6e695d] [&_>_p:not(.handwritten)]:[font-size:15px] [&_>_p:not(.handwritten)]:[max-width:430px] max-[700px]:[&_h2]:[font-size:43px] max-[700px]:[&_>_p:not(.handwritten)]:[font-size:14px]"
           }
         >
-          <p
+          {location.eyebrow.trim() && (<p
             className={
               "handwritten [font-family:var(--hand)] [font-size:29px] [line-height:1.3] [color:var(--yellow-dark)] [margin-bottom:7px] max-[700px]:[font-size:26px]"
             }
           >
             {location.eyebrow}
-          </p>
+          </p>)}
           <h2>
-            {location.headline[0]}
-            <br />
-            {location.headline[1]}
+            <TextLines lines={location.headline} />
           </h2>
-          <p>{location.description}</p>
+          {location.description.trim() && (<p>{location.description}</p>)}
           <div
             className={
               "location-details [margin:29px_0] [&_>_div]:flex [&_>_div]:items-start [&_>_div]:[gap:15px] [&_>_div]:[margin:22px_0] [&_>_div_>_svg]:[width:22px] [&_>_div_>_svg]:[color:#a57915] [&_>_div_>_svg]:[margin-top:3px] [&_h3]:[font-size:22px] [&_h3]:[margin-bottom:8px] [&_p]:[font-size:13px] [&_p]:[color:#6e695d] [&_p]:[line-height:1.7] max-[700px]:[&_p]:[font-size:14px]"
@@ -599,7 +582,7 @@ export function Location({ document }: SectionProps) {
                 <p>
                   {address.street} · {address.neighborhood}
                   <br />
-                  {address.city}, {address.state}{" "}
+                  {address.city}, {address.state}{address.postalCode && ` · CEP ${address.postalCode}`}{" "}
                   {demo.enabled && (
                     <span
                       className={
@@ -621,17 +604,11 @@ export function Location({ document }: SectionProps) {
               <div>
                 <h3>{location.hoursHeading}</h3>
                 <p>
-                  {service.openingHours.map((hours) => (
-                    <Fragment key={hours}>
-                      {hours}
-                      <br />
-                    </Fragment>
-                  ))}
-                  {service.orderingHoursNote}
+                  <TextLines lines={[...service.openingHours, service.orderingHoursNote]} />
                 </p>
               </div>
             </div>
-            {service.modes.delivery && (
+            {service.modes.delivery && [service.delivery.neighborhoodsSummary, service.delivery.priceRangeText].some(line => line.trim()) && (
               <div>
                 <svg>
                   <use href="#i-truck" />
@@ -639,9 +616,7 @@ export function Location({ document }: SectionProps) {
                 <div>
                   <h3>{location.deliveryHeading}</h3>
                   <p>
-                    {service.delivery.neighborhoodsSummary}
-                    <br />
-                    {service.delivery.priceRangeText}
+                    <TextLines lines={[service.delivery.neighborhoodsSummary, service.delivery.priceRangeText]} />
                   </p>
                 </div>
               </div>
@@ -663,15 +638,15 @@ export function Location({ document }: SectionProps) {
                 {demoCopy.contactDisclaimer}
               </p>
             )}
-            <div
+            {[location.socialLinkPrefix, contact.instagramLabel].some(value => value?.trim()) && <div
               className={
                 "location-social flex gap-5 [margin-top:20px] [font-size:13px] [&_a]:[text-decoration:underline] [&_a]:[text-underline-offset:4px]"
               }
             >
               <SocialLink>
-                {location.socialLinkPrefix} · {contact.instagramLabel}
+                {[location.socialLinkPrefix, contact.instagramLabel].filter(value => value?.trim()).join(" · ")}
               </SocialLink>
-            </div>
+            </div>}
           </div>
         </div>
         <div className={"location-visual [&_.location-map]:[height:300px]"}>
@@ -727,20 +702,20 @@ export function Location({ document }: SectionProps) {
                 "map-street [background:#faf7ee] [border:1px_solid_#cfc9b9] absolute [box-shadow:0_0_0_6px_#e1dccc] street-five [width:150%] [height:26px] [bottom:13%] [left:-25%] [transform:rotate(-26deg)]"
               }
             ></div>
-            <span
+            {location.mapRoad.trim() && (<span
               className={
                 "map-label absolute [color:#9b9587] [font-size:10px] [letter-spacing:1px] [z-index:1] map-label-one [top:48%] [left:4%] [transform:rotate(-26deg)]"
               }
             >
               {location.mapRoad}
-            </span>
-            <span
+            </span>)}
+            {location.mapAvenue.trim() && (<span
               className={
                 "map-label absolute [color:#9b9587] [font-size:10px] [letter-spacing:1px] [z-index:1] map-label-two [bottom:17%] [left:36%] [transform:rotate(64deg)]"
               }
             >
               {location.mapAvenue}
-            </span>
+            </span>)}
             <span
               className={
                 "map-neighborhood absolute [top:13%] [right:13%] [font-size:13px] [color:#8c887d] [letter-spacing:3px]"
@@ -763,7 +738,7 @@ export function Location({ document }: SectionProps) {
               }
             >
               <strong>{business.name.toLocaleUpperCase(locale)}</strong>
-              <span>{location.mapPlaceTagline}</span>
+              {location.mapPlaceTagline.trim() && (<span>{location.mapPlaceTagline}</span>)}
             </div>
             {contact.mapsUrl && (
               <a
@@ -780,13 +755,13 @@ export function Location({ document }: SectionProps) {
                 </svg>
               </a>
             )}
-            <span
+            {location.mapCaption.trim() && (<span
               className={
                 "map-caption absolute [bottom:12px] [right:12px] [font-size:10px] [background:#fff8] [padding:3px_8px] [color:#7e776a]"
               }
             >
               {location.mapCaption}
-            </span>
+            </span>)}
           </div>
         </div>
       </div>
@@ -812,29 +787,26 @@ export function Faq({ document }: SectionProps) {
         }
       >
         <div>
-          <p
+          {faq.eyebrow.trim() && (<p
             className={
               "handwritten [font-family:var(--hand)] [font-size:29px] [line-height:1.3] [color:var(--yellow-dark)] [margin-bottom:7px] max-[700px]:[font-size:26px]"
             }
           >
             {faq.eyebrow}
-          </p>
+          </p>)}
           <h2>
-            {faq.headline[0]}
-            <br />
-            {faq.headline[1]}
+            <TextLines lines={faq.headline} />
           </h2>
-          <p>
-            {faq.intro[0]}
-            <br />
-            {faq.intro[1]}
-          </p>
+          {faq.intro.some(line => line.trim()) && (<p>
+            <TextLines lines={faq.intro} />
+          </p>)}
         </div>
         <div
           className={
             "faq-list [&_details]:[border-bottom:1px_solid_#d0c8b7] [&_details:first-child]:[border-top:1px_solid_#d0c8b7] [&_summary]:[list-style:none] [&_summary]:flex [&_summary]:justify-between [&_summary]:items-center [&_summary]:gap-5 [&_summary]:[padding:20px_0] [&_summary]:[font-size:15px] [&_summary]:font-semibold [&_summary]:[cursor:pointer] [&_summary::-webkit-details-marker]:hidden [&_summary_span]:[font-size:24px] [&_summary_span]:[line-height:1] [&_summary_span]:[font-weight:400] [&_details[open]_summary_span]:[transform:rotate(45deg)] [&_details_p]:[padding:0_32px_20px_0] [&_details_p]:[color:#6f685b] [&_details_p]:[font-size:14px] [&_details_p]:[line-height:1.7] max-[700px]:[&_summary]:[font-size:14px] max-[700px]:[&_summary]:[padding:19px_0] max-[700px]:[&_details_p]:[font-size:13px]"
           }
         >
+          {!faq.items.some(item => !item.demoOnly || demo.enabled) && <p role="status" className="py-6 text-sm">Nenhuma pergunta cadastrada no momento.</p>}
           {faq.items
             .filter((item) => !item.demoOnly || demo.enabled)
             .map((item) => (
@@ -869,13 +841,13 @@ export function FinalCallToAction({ document }: SectionProps) {
         }
       >
         <div>
-          <p
+          {cta.eyebrow.trim() && (<p
             className={
               "handwritten [font-family:var(--hand)] [font-size:29px] [line-height:1.3] [color:var(--yellow-dark)] [margin-bottom:7px] max-[700px]:[font-size:26px]"
             }
           >
             {cta.eyebrow}
-          </p>
+          </p>)}
           <h2>{cta.title}</h2>
         </div>
         <SectionLink
@@ -901,7 +873,7 @@ export function Footer({ document }: SectionProps) {
     demo,
   } = document;
   return (
-    <footer className={"footer [background:#111110] [color:#ccc8bd]"}>
+    <footer id={structuralSectionIds.footer} className={"footer [background:#111110] [color:#ccc8bd]"}>
       <div
         className={
           "site-container [width:min(1240px,_calc(100%_-_88px))] mx-auto max-[1150px]:[width:calc(100%_-_56px)] max-[700px]:[width:calc(100%_-_40px)] max-[360px]:[width:calc(100%_-_28px)] footer-main grid [grid-template-columns:1.1fr_1fr_1.25fr_1.15fr] [gap:30px] [padding-top:46px] [padding-bottom:38px] [&_>_.brand]:[align-self:start] [&_>_.brand]:[color:#fff] [&_h3]:[color:var(--yellow)] [&_h3]:[font-size:21px] [&_h3]:[margin-bottom:14px] [&_>_div_>_a:not(.button)]:block [&_>_div_>_p]:block [&_>_div_>_a:not(.button)]:[font-size:12px] [&_>_div_>_p]:[font-size:12px] [&_>_div_>_a:not(.button)]:[line-height:1.8] [&_>_div_>_p]:[line-height:1.8] [&_>_div_>_a:not(.button)]:[margin:5px_0] [&_>_div_>_p]:[margin:5px_0] [&_>_div_>_a:not(.button):hover]:[color:var(--yellow)] max-[1150px]:[gap:24px] max-[900px]:[grid-template-columns:1fr_1fr] max-[900px]:[gap:36px] max-[700px]:[grid-template-columns:1fr_1fr] max-[700px]:[gap:32px_20px] max-[700px]:[padding-top:36px] max-[700px]:[&_>_.brand]:[grid-column:1/-1] max-[700px]:[&_>_div:nth-child(2)]:[order:2] max-[700px]:[&_>_div:nth-child(3)]:[order:3]"
@@ -923,23 +895,22 @@ export function Footer({ document }: SectionProps) {
           </svg>
           <span>
             {business.brandLines[0]}
-            <br />
-            {business.brandLines[1]}
-            <small>{business.tagline}</small>
+            {business.brandLines[1].trim() && <><br />{business.brandLines[1]}</>}
+            {business.tagline.trim() && (<small>{business.tagline}</small>)}
           </span>
         </SectionLink>
         <div>
-          <h3>{footer.navigationHeading}</h3>
-          {footer.navigationLinks.map((link) => (
-            <SectionLink key={link.target} href={sectionAnchors[link.target]}>
+          {footer.navigationHeading.trim() && (<h3>{footer.navigationHeading}</h3>)}
+          {footer.navigationLinks.map((link, index) => (
+            <SectionLink key={index} href={sectionAnchors[link.target]}>
               {link.label}
             </SectionLink>
           ))}
         </div>
         <div>
-          <h3>{footer.serviceHeading}</h3>
-          <p>{footer.serviceLines[0]}</p>
-          <p>{footer.serviceLines[1]}</p>
+          {footer.serviceHeading.trim() && (<h3>{footer.serviceHeading}</h3>)}
+          {footer.serviceLines[0].trim() && (<p>{footer.serviceLines[0]}</p>)}
+          {footer.serviceLines[1].trim() && (<p>{footer.serviceLines[1]}</p>)}
           <SectionLink href="#duvidas">{footer.faqLinkLabel}</SectionLink>
         </div>
         <div
@@ -947,11 +918,9 @@ export function Footer({ document }: SectionProps) {
             "footer-order [&_>_p]:[font-family:var(--hand)] [&_.button]:[font-size:15px] [&_.button]:[padding:10px_14px] [&_.button]:[min-height:42px] [&_.button]:w-full max-[700px]:[grid-column:1/-1] max-[700px]:[order:4] max-[700px]:[border-top:1px_solid_#ffffff20] max-[700px]:[padding-top:25px] max-[700px]:flex max-[700px]:items-center max-[700px]:[gap:18px] max-[700px]:[&_>_p]:[flex:1] max-[700px]:[&_.button]:[width:auto] max-[700px]:[&_.button]:[font-size:14px] max-[700px]:[&_.button_svg]:hidden"
           }
         >
-          <p>
-            {footer.signature[0]}
-            <br />
-            {footer.signature[1]}
-          </p>
+          {footer.signature.some(line => line.trim()) && (<p>
+            <TextLines lines={footer.signature} />
+          </p>)}
           <SectionLink
             className={
               "button inline-flex items-center justify-center gap-3 [min-height:49px] [padding:13px_23px] [border:1px_solid_transparent] rounded-[2px] [font-family:var(--display)] [font-size:18px] font-bold [line-height:1.2] [transition:background_0.18s,_color_0.18s,_transform_0.18s] [&:hover]:[transform:translateY(-2px)] [&_svg]:[width:21px] [&_svg]:[height:21px] button-outline [border-color:#ba901f] [color:var(--paper)] [background:transparent] [&:hover]:[background:#f5bb1614]"

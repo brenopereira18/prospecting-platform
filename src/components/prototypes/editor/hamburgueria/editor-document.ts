@@ -1,4 +1,6 @@
 import { hexColorSchema } from "../../schemas/prototype-base.schema";
+import { reduceEditorMenu, type EditorMenuAction } from "./editor-menu-document";
+import { reduceEditorSections, type EditorSectionAction } from "./editor-section-document";
 import { brasaBurgerDefaultDocument } from "../../templates/hamburgueria/data/default-document";
 import {
   hamburgueriaPrototypeDocumentSchema,
@@ -14,6 +16,8 @@ export type HeroTextField = "eyebrow" | "primaryCtaLabel" | "secondaryCtaLabel";
 export type EditorErrors = Record<string, string>;
 
 export type EditorDocumentAction =
+  | EditorMenuAction
+  | EditorSectionAction
   | { type: "color"; field: ColorField; value: string }
   | { type: "font"; field: FontField; value: FontKey }
   | { type: "business"; field: "name" | "tagline"; value: string }
@@ -64,6 +68,10 @@ export function editorDocumentReducer(
       return { ...document, sections: { ...document.sections, [action.field]: action.value } };
     case "reset":
       return createEditorDocument();
+    default:
+      return action.type.startsWith("menu/")
+        ? reduceEditorMenu(document, action as EditorMenuAction)
+        : reduceEditorSections(document, action as EditorSectionAction);
   }
 }
 
@@ -85,9 +93,13 @@ export function validateEditorDocument(document: HamburgueriaPrototypeDocument):
       : path === "contact.instagramUrl" || path === "contact.mapsUrl"
         ? "Informe um link completo e válido ou deixe o campo vazio."
         : issue.code === "too_small"
-          ? "Preencha este campo."
+          ? issue.origin === "number" ? `Use um valor maior ou igual a ${issue.minimum}.`
+            : issue.origin === "array" ? `Mantenha pelo menos ${issue.minimum} itens.` : "Preencha este campo."
           : issue.code === "too_big"
-            ? `Use até ${issue.maximum} caracteres.`
+            ? issue.origin === "number" ? `Use um valor menor ou igual a ${issue.maximum}.`
+              : issue.origin === "array" ? `Use até ${issue.maximum} itens.` : `Use até ${issue.maximum} caracteres.`
+            : issue.code === "invalid_format" && issue.format === "url"
+              ? "Informe um link completo e válido ou deixe o campo vazio."
             : issue.message;
   }
   return errors;

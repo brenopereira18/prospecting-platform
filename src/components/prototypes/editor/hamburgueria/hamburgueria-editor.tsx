@@ -11,12 +11,14 @@ import {
   type EditorErrors,
 } from "./editor-document";
 import { HamburgueriaEditorPanel } from "./editor-panel";
+import type { EditorPanelSection } from "./editor-navigation";
 import { HamburgueriaEditorPreview, type EditorViewport } from "./editor-preview";
 
 export function HamburgueriaEditor() {
   const [document, dispatch] = useReducer(editorDocumentReducer, undefined, createEditorDocument);
   const [viewport, setViewport] = useState<EditorViewport>("desktop");
   const [errors, setErrors] = useState<EditorErrors>({});
+  const [selectedSection, setSelectedSection] = useState<EditorPanelSection>("appearance");
   const confirmation = useRef<HTMLDialogElement>(null);
   const dirty = useMemo(() => hasEditorChanges(document), [document]);
   const previewDocument = useMemo(() => getPreviewDocument(document), [document]);
@@ -57,8 +59,8 @@ export function HamburgueriaEditor() {
         </div>
       </header>
       <div className="grid min-h-0 flex-1 grid-cols-[340px_minmax(0,1fr)] max-lg:grid-cols-[300px_minmax(0,1fr)] max-md:grid-cols-1 max-md:grid-rows-[minmax(180px,40%)_minmax(240px,1fr)]">
-        <HamburgueriaEditorPanel document={document} dispatch={dispatch} errors={errors} onValidate={() => setErrors(validateEditorDocument(document))} />
-        <HamburgueriaEditorPreview document={previewDocument} viewport={viewport} />
+        <HamburgueriaEditorPanel selectedSection={selectedSection} onSelectSection={setSelectedSection} document={document} dispatch={dispatch} errors={errors} onValidate={() => setErrors(validateEditorDocument(document))} />
+        <HamburgueriaEditorPreview selectedSection={selectedSection} document={previewDocument} viewport={viewport} />
       </div>
       <dialog ref={confirmation} aria-labelledby="restore-title"
         className="m-auto w-[calc(100%_-_32px)] max-w-md rounded-2xl border border-sidebar-hover bg-card p-6 text-foreground backdrop:bg-black/60">

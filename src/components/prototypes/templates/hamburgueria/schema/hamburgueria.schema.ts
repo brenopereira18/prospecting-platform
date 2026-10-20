@@ -39,7 +39,11 @@ export const HAMBURGUERIA_ICON_KEYS = [
   "cup",
 ] as const;
 
+// Supporting copy can be cleared; identity, headings and action labels remain required.
+const supportingTextSchema = (max: number) => z.string().trim().max(max);
+
 const iconKeySchema = z.enum(HAMBURGUERIA_ICON_KEYS);
+export const HAMBURGUERIA_MENU_LIMITS = { categories: 12, products: 100, extras: 40, priceCents: 100_000_000 } as const;
 const sectionIds = [
   "hero",
   "qualities",
@@ -87,13 +91,13 @@ const menuProductSchema = z
     id: prototypeIdSchema,
     categoryId: prototypeIdSchema,
     name: prototypeTextSchema(100),
-    description: prototypeTextSchema(600),
-    priceCents: z.number().int().nonnegative().max(100_000_000),
+    description: supportingTextSchema(600),
+    priceCents: z.number().int().nonnegative().max(HAMBURGUERIA_MENU_LIMITS.priceCents),
     image: templateImageSchema.optional(),
     icon: iconKeySchema.optional(),
-    badge: prototypeTextSchema(60).optional(),
+    badge: supportingTextSchema(60).optional(),
     vegetarian: z.boolean().optional(),
-    allergens: prototypeTextSchema(300).optional(),
+    allergens: supportingTextSchema(300).optional(),
   })
   .refine((product) => Boolean(product.image || product.icon), {
     path: ["image"],
@@ -104,7 +108,7 @@ const reviewSchema = z.strictObject({
   id: prototypeIdSchema,
   initials: prototypeTextSchema(8),
   name: prototypeTextSchema(100),
-  role: prototypeTextSchema(100),
+  role: supportingTextSchema(100),
   quote: prototypeTextSchema(600),
   rating: z.number().min(0).max(5).optional(),
   sourceUrl: z
@@ -125,19 +129,19 @@ const hamburgueriaContentSchema = z.strictObject({
     menuButtonLabel: prototypeTextSchema(60),
   }),
   hero: z.strictObject({
-    eyebrow: prototypeTextSchema(120),
-    headline: z.tuple([prototypeTextSchema(60), prototypeTextSchema(60)]),
-    description: z.tuple([prototypeTextSchema(180), prototypeTextSchema(180)]),
+    eyebrow: supportingTextSchema(120),
+    headline: z.tuple([prototypeTextSchema(60), supportingTextSchema(60)]),
+    description: z.tuple([supportingTextSchema(180), supportingTextSchema(180)]),
     image: templateImageSchema,
     primaryCtaLabel: prototypeTextSchema(60),
     secondaryCtaLabel: prototypeTextSchema(60),
     reviewStarsLabel: prototypeTextSchema(40),
-    reviewCountLabel: prototypeTextSchema(60),
-    hoursSummary: prototypeTextSchema(100),
-    serviceSummary: prototypeTextSchema(100),
-    badgeText: prototypeTextSchema(60),
-    badgeLines: z.tuple([prototypeTextSchema(40), prototypeTextSchema(40)]),
-    bottomNote: prototypeTextSchema(120),
+    reviewCountLabel: supportingTextSchema(60),
+    hoursSummary: supportingTextSchema(100),
+    serviceSummary: supportingTextSchema(100),
+    badgeText: supportingTextSchema(60),
+    badgeLines: z.tuple([supportingTextSchema(40), supportingTextSchema(40)]),
+    bottomNote: supportingTextSchema(120),
   }),
   qualities: z.strictObject({
     accessibleLabel: prototypeTextSchema(120),
@@ -147,34 +151,34 @@ const hamburgueriaContentSchema = z.strictObject({
           id: prototypeIdSchema,
           icon: iconKeySchema,
           title: prototypeTextSchema(80),
-          description: prototypeTextSchema(180),
+          description: supportingTextSchema(180),
         }),
       )
       .min(1)
       .max(8),
   }),
   menu: z.strictObject({
-    eyebrow: prototypeTextSchema(120),
+    eyebrow: supportingTextSchema(120),
     title: prototypeTextSchema(100),
     helpLinkLabel: prototypeTextSchema(100),
-    note: prototypeTextSchema(120),
+    note: supportingTextSchema(120),
     categoryGroupLabel: prototypeTextSchema(100),
-    defaultCategoryId: prototypeIdSchema,
-    categories: z.array(categorySchema).min(1).max(12),
-    products: z.array(menuProductSchema).min(1).max(100),
-    extrasHeading: prototypeTextSchema(120),
+    defaultCategoryId: prototypeIdSchema.nullable(),
+    categories: z.array(categorySchema).max(HAMBURGUERIA_MENU_LIMITS.categories),
+    products: z.array(menuProductSchema).max(HAMBURGUERIA_MENU_LIMITS.products),
+    extrasHeading: supportingTextSchema(120),
     extras: z
       .array(
         z.strictObject({
           id: prototypeIdSchema,
           name: prototypeTextSchema(100),
-          priceCents: z.number().int().nonnegative().max(100_000_000),
+          priceCents: z.number().int().nonnegative().max(HAMBURGUERIA_MENU_LIMITS.priceCents),
         }),
       )
-      .max(40),
-    vegetarianNote: prototypeTextSchema(180),
+      .max(HAMBURGUERIA_MENU_LIMITS.extras),
+    vegetarianNote: supportingTextSchema(180),
     vegetarianLabel: prototypeTextSchema(60),
-    customizationNote: prototypeTextSchema(180),
+    customizationNote: supportingTextSchema(180),
     orderButtonLabel: prototypeTextSchema(40),
   }),
   service: z.strictObject({
@@ -184,7 +188,7 @@ const hamburgueriaContentSchema = z.strictObject({
       dineIn: z.boolean(),
     }),
     openingHours: z.array(prototypeTextSchema(160)).min(1).max(14),
-    orderingHoursNote: prototypeTextSchema(180),
+    orderingHoursNote: supportingTextSchema(180),
     delivery: z.strictObject({
       areas: z
         .array(
@@ -196,95 +200,95 @@ const hamburgueriaContentSchema = z.strictObject({
         )
         .min(1)
         .max(100),
-      neighborhoodsSummary: prototypeTextSchema(240),
-      priceRangeText: prototypeTextSchema(120),
+      neighborhoodsSummary: supportingTextSchema(240),
+      priceRangeText: supportingTextSchema(120),
       minimumFeeCents: z.number().int().nonnegative().max(100_000_000),
       estimate: prototypeTextSchema(60),
       pickupEstimate: prototypeTextSchema(60),
     }),
-    paymentMethodsText: prototypeTextSchema(160),
-    pickupFeeText: prototypeTextSchema(80),
+    paymentMethodsText: supportingTextSchema(160),
+    pickupFeeText: supportingTextSchema(80),
   }),
   story: z.strictObject({
     featured: z.strictObject({
-      productId: prototypeIdSchema,
+      productId: prototypeIdSchema.nullable(),
       image: templateImageSchema,
-      eyebrow: prototypeTextSchema(120),
+      eyebrow: supportingTextSchema(120),
       headline: z.tuple([
         prototypeTextSchema(40),
-        prototypeTextSchema(40),
-        prototypeTextSchema(40),
+        supportingTextSchema(40),
+        supportingTextSchema(40),
       ]),
       description: z.tuple([
-        prototypeTextSchema(160),
-        prototypeTextSchema(160),
+        supportingTextSchema(160),
+        supportingTextSchema(160),
       ]),
-      priceLabel: prototypeTextSchema(60),
+      priceLabel: supportingTextSchema(60),
       ctaLabel: prototypeTextSchema(60),
-      targetCategoryId: prototypeIdSchema,
+      targetCategoryId: prototypeIdSchema.nullable(),
     }),
-    eyebrow: prototypeTextSchema(120),
+    eyebrow: supportingTextSchema(120),
     headline: z.tuple([
       prototypeTextSchema(60),
-      prototypeTextSchema(60),
-      prototypeTextSchema(60),
+      supportingTextSchema(60),
+      supportingTextSchema(60),
     ]),
-    paragraphs: z.array(prototypeTextSchema(1000)).min(1).max(8),
-    signature: z.tuple([prototypeTextSchema(120), prototypeTextSchema(120)]),
+    paragraphs: z.array(supportingTextSchema(1000)).min(1).max(8),
+    signature: z.tuple([supportingTextSchema(120), supportingTextSchema(120)]),
   }),
   howToOrder: z.strictObject({
-    eyebrow: prototypeTextSchema(120),
+    eyebrow: supportingTextSchema(120),
     title: prototypeTextSchema(120),
     steps: z.tuple([
       z.strictObject({
         id: prototypeIdSchema,
         title: prototypeTextSchema(100),
-        body: prototypeTextSchema(300),
+        body: supportingTextSchema(300),
       }),
       z.strictObject({
         id: prototypeIdSchema,
         title: prototypeTextSchema(100),
-        body: prototypeTextSchema(300),
+        body: supportingTextSchema(300),
       }),
       z.strictObject({
         id: prototypeIdSchema,
         title: prototypeTextSchema(100),
-        body: prototypeTextSchema(300),
+        body: supportingTextSchema(300),
       }),
     ]),
     minimumDeliveryLabel: prototypeTextSchema(100),
     atendimentoLinkLabel: prototypeTextSchema(100),
   }),
   reviews: z.strictObject({
-    eyebrow: prototypeTextSchema(120),
+    eyebrow: supportingTextSchema(120),
     title: prototypeTextSchema(120),
     rating: z.number().min(0).max(5),
     count: z.number().int().nonnegative().max(100_000_000),
     starsLabel: prototypeTextSchema(40),
-    countLabel: prototypeTextSchema(80),
+    countLabel: supportingTextSchema(80),
     entries: z.array(reviewSchema).max(30),
   }),
   location: z.strictObject({
-    eyebrow: prototypeTextSchema(120),
-    headline: z.tuple([prototypeTextSchema(80), prototypeTextSchema(80)]),
-    description: prototypeTextSchema(500),
+    eyebrow: supportingTextSchema(120),
+    headline: z.tuple([prototypeTextSchema(80), supportingTextSchema(80)]),
+    description: supportingTextSchema(500),
     addressHeading: prototypeTextSchema(80),
     hoursHeading: prototypeTextSchema(80),
     deliveryHeading: prototypeTextSchema(80),
     image: templateImageSchema,
-    mapRoad: prototypeTextSchema(120),
-    mapAvenue: prototypeTextSchema(120),
-    mapPlaceTagline: prototypeTextSchema(120),
+    mapRoad: supportingTextSchema(120),
+    mapAvenue: supportingTextSchema(120),
+    mapPlaceTagline: supportingTextSchema(120),
     mapAccessibleLabel: prototypeTextSchema(160),
     mapLinkLabel: prototypeTextSchema(80),
-    mapCaption: prototypeTextSchema(100),
+    mapCaption: supportingTextSchema(100),
     orderLinkLabel: prototypeTextSchema(80),
-    socialLinkPrefix: prototypeTextSchema(40),
+    socialLinkPrefix: supportingTextSchema(40),
   }),
   faq: z.strictObject({
-    eyebrow: prototypeTextSchema(120),
-    headline: z.tuple([prototypeTextSchema(60), prototypeTextSchema(60)]),
-    intro: z.tuple([prototypeTextSchema(120), prototypeTextSchema(120)]),
+    eyebrow: supportingTextSchema(120),
+    headline: z.tuple([prototypeTextSchema(60), supportingTextSchema(60)]),
+    intro: z.tuple([supportingTextSchema(120), supportingTextSchema(120)]),
     items: z
       .array(
         z.strictObject({
@@ -297,12 +301,12 @@ const hamburgueriaContentSchema = z.strictObject({
       .max(40),
   }),
   finalCallToAction: z.strictObject({
-    eyebrow: prototypeTextSchema(120),
+    eyebrow: supportingTextSchema(120),
     title: prototypeTextSchema(120),
     buttonLabel: prototypeTextSchema(60),
   }),
   footer: z.strictObject({
-    navigationHeading: prototypeTextSchema(80),
+    navigationHeading: supportingTextSchema(80),
     navigationLinks: z.tuple([
       z.strictObject({
         target: z.enum(sectionIds),
@@ -317,10 +321,10 @@ const hamburgueriaContentSchema = z.strictObject({
         label: prototypeTextSchema(80),
       }),
     ]),
-    serviceHeading: prototypeTextSchema(80),
+    serviceHeading: supportingTextSchema(80),
     faqLinkLabel: prototypeTextSchema(80),
-    serviceLines: z.tuple([prototypeTextSchema(120), prototypeTextSchema(120)]),
-    signature: z.tuple([prototypeTextSchema(120), prototypeTextSchema(120)]),
+    serviceLines: z.tuple([supportingTextSchema(120), supportingTextSchema(120)]),
+    signature: z.tuple([supportingTextSchema(120), supportingTextSchema(120)]),
     buttonLabel: prototypeTextSchema(80),
     copyrightYear: z.number().int().min(2000).max(2200),
   }),
@@ -363,6 +367,10 @@ export const hamburgueriaPrototypeDocumentSchema = z
   .strictObject({
     ...prototypeBaseSchema.shape,
     category: z.literal("hamburgueria"),
+    business: prototypeBaseSchema.shape.business.extend({
+      tagline: supportingTextSchema(160),
+      brandLines: z.tuple([prototypeTextSchema(40), supportingTextSchema(40)]),
+    }),
     template: z.strictObject({
       id: z.literal("brasa-burger"),
       version: z.number().int().positive().max(10_000),
@@ -423,7 +431,8 @@ export const hamburgueriaPrototypeDocumentSchema = z
       ctx,
     );
 
-    if (!categoryIds.has(document.content.menu.defaultCategoryId)) {
+    const defaultCategoryId = document.content.menu.defaultCategoryId;
+    if (categories.length ? defaultCategoryId === null || !categoryIds.has(defaultCategoryId) : defaultCategoryId !== null) {
       ctx.addIssue({
         code: "custom",
         path: ["content", "menu", "defaultCategoryId"],
@@ -442,14 +451,14 @@ export const hamburgueriaPrototypeDocumentSchema = z
     });
 
     const featured = document.content.story.featured;
-    const featuredProduct = productById.get(featured.productId);
-    if (!featuredProduct) {
+    const featuredProduct = featured.productId === null ? undefined : productById.get(featured.productId);
+    if (featured.productId !== null && !featuredProduct) {
       ctx.addIssue({
         code: "custom",
         path: ["content", "story", "featured", "productId"],
         message: "O produto em destaque precisa existir no cardápio.",
       });
-    } else if (featuredProduct.categoryId !== featured.targetCategoryId) {
+    } else if (featuredProduct && featuredProduct.categoryId !== featured.targetCategoryId) {
       ctx.addIssue({
         code: "custom",
         path: ["content", "story", "featured", "targetCategoryId"],
@@ -458,7 +467,7 @@ export const hamburgueriaPrototypeDocumentSchema = z
       });
     }
 
-    if (!categoryIds.has(featured.targetCategoryId)) {
+    if (featured.productId === null ? featured.targetCategoryId !== null : featured.targetCategoryId === null || !categoryIds.has(featured.targetCategoryId)) {
       ctx.addIssue({
         code: "custom",
         path: ["content", "story", "featured", "targetCategoryId"],

@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { HamburgueriaRenderer } from "../../templates/hamburgueria/hamburgueria-renderer";
 import type { HamburgueriaPrototypeDocument } from "../../templates/hamburgueria/schema/hamburgueria.schema";
 import { connectPreviewFrame } from "./preview-frame";
+import { getPreviewSectionId, selectPreviewSection, type EditorPanelSection } from "./editor-navigation";
 
 export type EditorViewport = "desktop" | "mobile";
 
@@ -51,14 +52,21 @@ class PreviewErrorBoundary extends Component<{ children: ReactNode; onRetry: () 
   }
 }
 
-export function HamburgueriaEditorPreview({ document: prototypeDocument, viewport }: {
+export function HamburgueriaEditorPreview({ document: prototypeDocument, viewport, selectedSection }: {
   document: HamburgueriaPrototypeDocument;
   viewport: EditorViewport;
+  selectedSection: EditorPanelSection;
 }) {
   const [frameBody, setFrameBody] = useState<HTMLElement | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const [attempt, setAttempt] = useState(0);
   const frame = useRef<HTMLIFrameElement>(null);
+  const selectedId = getPreviewSectionId(selectedSection, prototypeDocument.sections);
+
+  useEffect(() => {
+    if (!frameBody || error) return;
+    return selectPreviewSection(frameBody.ownerDocument, selectedId);
+  }, [frameBody, selectedId, error]);
 
   useEffect(() => {
     if (!frame.current) return;
