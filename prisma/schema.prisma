@@ -159,9 +159,24 @@ model PrototypeVersion {
   document    Json      @db.JsonB
   createdAt   DateTime  @default(now())
   prototype   Prototype @relation(fields: [prototypeId], references: [id], onDelete: Cascade)
+  thumbnail   PrototypeThumbnail?
 
   @@unique([prototypeId, number])
   @@map("prototype_versions")
+}
+
+// Derived artifact: its lifecycle never updates the immutable version document.
+model PrototypeThumbnail {
+  versionId      String           @id
+  objectKey      String           @unique
+  status         String
+  attemptId      String
+  leaseExpiresAt DateTime
+  generatedAt    DateTime?
+  createdAt      DateTime         @default(now())
+  version        PrototypeVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+
+  @@map("prototype_thumbnails")
 }
 
 model PrototypeAsset {

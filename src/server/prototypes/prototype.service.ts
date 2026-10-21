@@ -21,8 +21,9 @@ function summary(row: PrototypeSummaryRow): PrototypeSummaryDTO {
 function dto(row: Prototype): PrototypeDTO {
   return { ...summary(row), draftDocument: persistablePrototypeDocumentSchema.parse(row.draftDocument) };
 }
-function versionSummary(row: Pick<PrototypeVersion, "id" | "prototypeId" | "number" | "createdAt">): PrototypeVersionSummaryDTO {
-  return { ...row, createdAt: row.createdAt.toISOString() };
+function versionSummary(row: Pick<PrototypeVersion, "id" | "prototypeId" | "number" | "createdAt"> & { thumbnail?: { status: string } | null }): PrototypeVersionSummaryDTO {
+  return { id: row.id, prototypeId: row.prototypeId, number: row.number, createdAt: row.createdAt.toISOString(),
+    ...(row.thumbnail ? { thumbnailReady: row.thumbnail.status === "ready" } : {}) };
 }
 function versionDTO(row: PrototypeVersion): PrototypeVersionDTO {
   return { ...versionSummary(row), document: persistablePrototypeDocumentSchema.parse(row.document) };
@@ -105,8 +106,23 @@ export class PrototypeService {
   }
 
   async list(userId: string): Promise<PrototypeSummaryDTO[]> {
-    const rows = await this.db.prototype.findMany({ where: { userId }, select: { ...summarySelect, draftDocument: true, lead: { select: { name: true, userId: true } } }, orderBy: [{ updatedAt: "desc" }, { id: "asc" }] });
-    return rows.map(row => ({ ...summary(row), businessName: persistablePrototypeDocumentSchema.parse(row.draftDocument).business.name, leadName: row.lead?.userId === userId ? row.lead.name : null }));
+    const rows = await this.db.prototype.findMany({
+      where: { userId },
+      select: {
+        ...summarySelect,
+        draftDocument: true,
+        lead: { select: { name: true, userId: true, category: { select: { name: true } } } },
+        versions: { take: 1, orderBy: { number: "desc" }, select: { id: true, prototypeId: true, number: true, createdAt: true, thumbnail: { select: { status: true } } } },
+      },
+      orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+    });
+    return rows.map(row => ({
+      ...summary(row),
+      businessName: persistablePrototypeDocumentSchema.parse(row.draftDocument).business.name,
+      leadName: row.lead?.userId === userId ? row.lead.name : null,
+      categoryName: row.lead?.userId === userId ? row.lead.category.name : null,
+      latestVersion: row.versions[0] ? versionSummary(row.versions[0]) : null,
+    }));
   }
 
   private async failedRevision(tx: Prisma.TransactionClient, id: string, userId: string): Promise<never> {
