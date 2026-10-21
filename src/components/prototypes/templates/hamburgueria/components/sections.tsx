@@ -31,6 +31,7 @@ export function Hero({ document }: SectionProps) {
         "hero color-deep relative [background:var(--surface)] [color:var(--text)] overflow-hidden [&_.handwritten]:[color:var(--accent)] [&_.handwritten]:[font-size:32px] [&_.handwritten]:[transform:rotate(-3deg)] [&_.handwritten]:[transform-origin:left] [&_.handwritten]:[margin-bottom:20px] [&_h1]:[font:800_clamp(70px,_7.4vw,_106px)/0.92_var(--display)] [&_h1]:[letter-spacing:-2px] [&_h1]:[overflow-wrap:anywhere] [&_h1_span]:[color:var(--accent)] max-[1150px]:[&_h1]:[font-size:87px] max-[900px]:[&_h1]:[font-size:76px] max-[700px]:[&_.handwritten]:[font-size:27px] max-[700px]:[&_.handwritten]:[margin-bottom:15px] max-[700px]:[&_h1]:[font-size:clamp(48px,_13.8vw,_93px)] max-[700px]:[&_h1]:[letter-spacing:-1.6px] max-[360px]:[&_h1]:[font-size:clamp(44px,_13.8vw,_50px)]"
       }
       id="inicio"
+      data-image-viewport="hero"
       aria-labelledby="hero-title"
     >
       <TemplateImage
@@ -38,6 +39,7 @@ export function Hero({ document }: SectionProps) {
           "hero-photo absolute [right:0] [top:-12%] w-full [height:116%] object-cover [object-position:center_51%] min-[1600px]:[object-position:center_55%] max-[1150px]:[width:115%] max-[1150px]:[max-width:none] max-[1150px]:[right:-12%] max-[1150px]:[object-position:center] max-[700px]:[top:auto] max-[700px]:[bottom:-27px] max-[700px]:[height:440px] max-[700px]:[width:140%] max-[700px]:[right:-11%] max-[700px]:[object-position:61%_55%]"
         }
         image={hero.image}
+        imageSlot="hero"
         fetchPriority="high"
         loading="eager"
         width="1536"
@@ -243,12 +245,14 @@ export function Story({ document }: SectionProps) {
     >
       {featuredProduct && (
         <div
+          data-image-viewport="story"
           className={
             "combo-panel color-deep [background:var(--surface)] relative overflow-hidden [color:var(--text)] [min-height:510px] [&_>_.template-image]:absolute [&_>_.template-image]:[inset:0] [&_>_.template-image]:w-full [&_>_.template-image]:h-full [&_>_.template-image]:object-cover [&_>_.template-image]:[object-position:25%_60%] max-[700px]:[min-height:485px] max-[700px]:[&_>_.template-image]:[object-position:20%_60%] max-[700px]:[&_>_.template-image]:w-full"
           }
         >
           <TemplateImage
             image={featured.image}
+            imageSlot="story"
             loading="lazy"
             width="1024"
             height="1024"
@@ -768,6 +772,7 @@ export function Location({ document }: SectionProps) {
               "location-photo w-full [height:230px] object-cover [border-radius:4px] [margin-bottom:16px] max-[700px]:[height:220px]"
             }
             image={location.image}
+            imageSlot="location"
             width="900"
             height="600"
             sizes="(max-width: 900px) calc(100vw - 40px), 50vw"
