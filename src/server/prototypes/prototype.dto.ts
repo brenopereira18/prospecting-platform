@@ -4,6 +4,7 @@ import type { PrototypeConfiguration } from "../../components/prototypes/schemas
 export interface PrototypeSummaryDTO {
   id: string; name: string; templateId: string; templateVersion: number;
   draftRevision: number; leadId: string | null; createdAt: string; updatedAt: string;
+  versionCount?: number;
   leadName?: string | null;
   businessName?: string;
 }

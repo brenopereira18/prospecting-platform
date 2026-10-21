@@ -318,6 +318,22 @@ test(
           .name,
         changed.business.name,
       );
+      const history = await service.create({ name: "History integration", document: paletteDocument }, ids[0]);
+      const historical = await service.createVersion({ id: history.id, expectedRevision: 0 }, ids[0]);
+      await service.updateDraft({ id: history.id, expectedRevision: 0, name: history.name, document: changed }, ids[0]);
+      const restoreInput = { id: history.id, versionId: historical.id, expectedRevision: 1, confirmed: true };
+      const restores = await Promise.allSettled([service.restoreVersion(restoreInput, ids[0]), service.restoreVersion(restoreInput, ids[0])]);
+      assert.equal(restores.filter(result => result.status === "fulfilled").length, 1);
+      const restored = await service.findById(history.id, ids[0]);
+      assert.equal(restored.draftRevision, 2);
+      assert.deepEqual(restored.draftDocument, historical.document);
+      assert.deepEqual(await service.findVersion(history.id, historical.id, ids[0]), historical);
+      const retained = await service.createVersion({ id: history.id, expectedRevision: 2 }, ids[0]);
+      await assert.rejects(service.deleteVersion({ id: history.id, versionId: historical.id, confirmed: true }, ids[1]), { code: "NOT_FOUND" });
+      await service.deleteVersion({ id: history.id, versionId: historical.id, confirmed: true }, ids[0]);
+      assert.deepEqual(await service.findById(history.id, ids[0]), restored);
+      assert.deepEqual(await service.findVersion(history.id, retained.id, ids[0]), retained);
+      assert.equal((await service.createVersion({ id: history.id, expectedRevision: 2 }, ids[0])).number, 3);
     } finally {
       await db.user.deleteMany({ where: { id: { in: ids } } });
       await db.$disconnect();

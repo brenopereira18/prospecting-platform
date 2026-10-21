@@ -3,7 +3,7 @@ import { validateDocumentAssets } from "../prototype-assets/document-assets";
 import { prisma } from "@/lib/prisma/client";
 import { Prisma, type PrismaClient, type Prototype, type PrototypeVersion } from "../../../generated/prisma/client";
 import { persistablePrototypeDocumentSchema } from "../../components/prototypes/schemas/persistable-document.schema";
-import { createPrototypeSchema, createLeadPrototypeSchema, updatePrototypeDraftSchema, createPrototypeVersionSchema, deletePrototypeSchema } from "./prototype.schema";
+import { createPrototypeSchema, createLeadPrototypeSchema, updatePrototypeDraftSchema, createPrototypeVersionSchema, deletePrototypeSchema, deletePrototypeVersionSchema, restorePrototypeVersionSchema } from "./prototype.schema";
 import { compatibleTemplates, configurationFromLead } from "./template-registry";
 import type { LeadPrototypeOptionsDTO } from "./prototype.dto";
 import type { PrototypeDTO, PrototypeSummaryDTO, PrototypeVersionDTO, PrototypeVersionSummaryDTO } from "./prototype.dto";
@@ -11,10 +11,12 @@ import type { PrototypeDTO, PrototypeSummaryDTO, PrototypeVersionDTO, PrototypeV
 export class PrototypeError extends Error {
   constructor(public readonly code: "NOT_FOUND" | "CONFLICT" | "INVALID_INPUT", message: string) { super(message); }
 }
-const summarySelect = { id: true, name: true, templateId: true, templateVersion: true, draftRevision: true, leadId: true, createdAt: true, updatedAt: true } satisfies Prisma.PrototypeSelect;
-function summary(row: Pick<Prototype, keyof typeof summarySelect>): PrototypeSummaryDTO {
+const summarySelect = { id: true, name: true, templateId: true, templateVersion: true, draftRevision: true, leadId: true, createdAt: true, updatedAt: true, _count: { select: { versions: true } } } satisfies Prisma.PrototypeSelect;
+type PrototypeSummaryRow = Pick<Prototype, "id" | "name" | "templateId" | "templateVersion" | "draftRevision" | "leadId" | "createdAt" | "updatedAt"> & { _count?: { versions: number } };
+function summary(row: PrototypeSummaryRow): PrototypeSummaryDTO {
   return { id: row.id, name: row.name, templateId: row.templateId, templateVersion: row.templateVersion,
-    draftRevision: row.draftRevision, leadId: row.leadId, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString() };
+    draftRevision: row.draftRevision, leadId: row.leadId, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString(),
+    ...(row._count ? { versionCount: row._count.versions } : {}) };
 }
 function dto(row: Prototype): PrototypeDTO {
   return { ...summary(row), draftDocument: persistablePrototypeDocumentSchema.parse(row.draftDocument) };
@@ -115,7 +117,10 @@ export class PrototypeService {
 
   async updateDraft(input: unknown, userId: string): Promise<PrototypeDTO> {
     const data = updatePrototypeDraftSchema.parse(input);
-    return this.db.$transaction(async tx => {
+    return this.db.$transaction(tx => this.saveDraft(tx, data, userId));
+  }
+
+  private async saveDraft(tx: Prisma.TransactionClient, data: z.infer<typeof updatePrototypeDraftSchema>, userId: string): Promise<PrototypeDTO> {
       const result = await tx.prototype.updateMany({ where: { id: data.id, userId, draftRevision: data.expectedRevision },
         data: { name: data.name, draftDocument: json(data.document), templateId: data.document.template.id,
           templateVersion: data.document.template.version, draftRevision: { increment: 1 } } });
@@ -123,6 +128,36 @@ export class PrototypeService {
       await validateDocumentAssets(tx, data.document, data.id, userId);
       const row = await tx.prototype.findFirstOrThrow({ where: { id: data.id, userId } });
       return dto(row);
+  }
+
+  private async lockPrototype(tx: Prisma.TransactionClient, id: string, userId: string) {
+    // Coordinate restores/deletions with saves, new versions and asset reference checks.
+    await tx.$queryRaw(Prisma.sql`SELECT "id" FROM "prototypes" WHERE "id" = ${id} AND "userId" = ${userId} FOR UPDATE`);
+    const row = await tx.prototype.findFirst({ where: { id, userId } });
+    if (!row) throw new PrototypeError("NOT_FOUND", "Protótipo não encontrado.");
+    if (row.leadId) await this.ownedLead(tx, row.leadId, userId);
+    return row;
+  }
+
+  async restoreVersion(input: unknown, userId: string): Promise<PrototypeDTO> {
+    const data = restorePrototypeVersionSchema.parse(input);
+    return this.db.$transaction(async tx => {
+      const prototype = await this.lockPrototype(tx, data.id, userId);
+      const version = await tx.prototypeVersion.findFirst({ where: { id: data.versionId, prototypeId: data.id, prototype: { userId } } });
+      if (!version) throw new PrototypeError("NOT_FOUND", "Versão não encontrada.");
+      // Reuse the draft save path, including revision and permanent asset authorization.
+      return this.saveDraft(tx, { id: data.id, expectedRevision: data.expectedRevision, name: prototype.name, document: persistablePrototypeDocumentSchema.parse(version.document) }, userId);
+    });
+  }
+
+  async deleteVersion(input: unknown, userId: string): Promise<{ id: string; prototypeId: string; leadId: string | null }> {
+    const data = deletePrototypeVersionSchema.parse(input);
+    return this.db.$transaction(async tx => {
+      const prototype = await this.lockPrototype(tx, data.id, userId);
+      const deleted = await tx.prototypeVersion.deleteMany({ where: { id: data.versionId, prototypeId: data.id, prototype: { userId } } });
+      if (deleted.count !== 1) throw new PrototypeError("NOT_FOUND", "Versão não encontrada.");
+      // Never decrease versionSequence, modify the draft, or delete asset objects here.
+      return { id: data.versionId, prototypeId: data.id, leadId: prototype.leadId };
     });
   }
 

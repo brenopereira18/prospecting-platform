@@ -19,7 +19,11 @@ A migration `20261020120000_create_prototypes` cria `prototypes` e `prototype_ve
 1. Entre com uma conta existente e acesse os detalhes de um lead em `/leads`.
 2. Use Gerar protótipo para abrir `/leads/[id]/prototipos/novo`. O servidor verifica a propriedade do lead e oferece os templates compatíveis. Com um template, ele já fica selecionado; com vários, a escolha é obrigatória. Confira nome, slogan, descrição, contatos e localização, informe o nome interno e confirme Criar protótipo para abrir o editor persistido. Nenhum registro é criado ao abrir o formulário. Se já houver protótipos, abra um deles ou marque explicitamente que deseja criar outro.
 3. Edite o documento e use Salvar rascunho. Reabra pela listagem para confirmar o conteúdo salvo.
-4. Use Criar versão; se houver alterações locais, elas são salvas primeiro. Ver versões abre a lista; cada versão possui uma visualização autenticada e somente leitura. Visualizar uma versão não restaura nem altera o rascunho.
+4. Use Criar versão; se houver alterações locais, elas são salvas primeiro. Ver versões abre a aba Protótipos do lead associado, com o histórico do protótipo expandido. Cada versão possui uma visualização autenticada e somente leitura, que não altera o rascunho.
+
+O histórico fica agrupado por protótipo na aba Protótipos do lead. Editar uma versão exige confirmação: substitui o rascunho salvo por uma cópia do snapshot, incrementa sua revisão e abre o editor existente. O snapshot original não é alterado. Uma revisão desatualizada bloqueia a restauração. Excluir uma versão exige confirmação e remove apenas aquela versão; não renumera as demais nem exclui imagens do R2. O editor avisa antes de sair para o histórico com alterações não salvas.
+
+A antiga rota `/prototipos/[id]/versoes` apenas autentica e redireciona ao histórico correto. Protótipos antigos sem lead associado usam o mesmo componente de histórico na central `/prototipos`.
 5. Para testar conflito, abra o mesmo protótipo em duas abas. Salve em uma e tente salvar alterações na outra: a revisão antiga será rejeitada e o conteúdo local será mantido. O editor oferece abrir o rascunho salvo em outra aba para comparação.
 6. Selecionar uma imagem mantém o arquivo local e atualiza a prévia. Salvar rascunho ou Criar versão envia somente os arquivos utilizados ao R2 privado, substitui IDs locais e valida a propriedade dos assets no servidor. Imagens já persistidas não são reenviadas. Consulte [Imagens no R2](prototype-assets-r2.md) para configuração e teste manual.
 
