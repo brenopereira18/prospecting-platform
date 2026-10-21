@@ -1,6 +1,5 @@
+import "../lib/image-test-loader";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import { createRequire } from "node:module";
 import { test } from "node:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { brasaBurgerDefaultDocument } from "../data/default-document";
@@ -10,21 +9,16 @@ import {
 } from "../schema/hamburgueria.schema";
 import { HamburgueriaDocumentProvider } from "./document-provider";
 import { formatPriceParts } from "../lib/format";
-import { createEditorDocument, editorDocumentReducer, getPreviewDocument, validateEditorDocument } from "../../../editor/hamburgueria/editor-document";
-import { editorSections, getPreviewSectionId } from "../../../editor/hamburgueria/editor-navigation";
-
-// Node does not have Next's static-image loader. Load the actual bytes rather
-// than replacing the visual components, and retain the real image dimensions.
-const assetRequire = createRequire(`${process.cwd()}/package.json`);
-assetRequire.extensions[".webp"] = (module, filename) => {
-  const bytes = readFileSync(filename);
-  const size = assetRequire("next/dist/compiled/image-size").default(bytes);
-  module.exports = {
-    src: `data:image/webp;base64,${bytes.toString("base64")}`,
-    width: size.width,
-    height: size.height,
-  };
-};
+import {
+  createEditorDocument,
+  editorDocumentReducer,
+  getPreviewDocument,
+  validateEditorDocument,
+} from "../../../editor/hamburgueria/editor-document";
+import {
+  editorSections,
+  getPreviewSectionId,
+} from "../../../editor/hamburgueria/editor-navigation";
 
 async function render(document: HamburgueriaPrototypeDocument) {
   const { HamburgueriaContent } = await import("./content");
@@ -35,35 +29,144 @@ async function render(document: HamburgueriaPrototypeDocument) {
   );
 }
 
+test("all sections consume scoped surfaces and semantic foregrounds for a custom palette", async () => {
+  const document = createEditorDocument();
+  document.appearance.colors = {
+    primary: "#0044cc",
+    secondary: "#fff",
+    tertiary: "#121212",
+  };
+  schemaCheck(document);
+  const html = await render(document);
+  for (const [element, scope] of [
+    ["header", "deep"],
+    ["hero", "deep"],
+    ["qualities", "secondary"],
+    ["combo-panel", "deep"],
+    ["story-panel", "brand"],
+    ["how-section", "card"],
+    ["reviews-section", "secondary"],
+    ["faq-section", "soft"],
+    ["final-cta", "brand"],
+    ["footer", "deep"],
+  ])
+    assert.ok(html.includes(`${element} color-${scope} `), element);
+  assert.match(html, /product-card color-card /);
+  assert.match(html, /product-price[^\"]*text-\[var\(--accent\)\]/);
+  assert.match(html, /button-yellow[^\"]*\[color:var\(--on-brand\)\]/);
+  assert.match(html, /button-dark[^\"]*\[color:var\(--on-secondary\)\]/);
+  assert.doesNotMatch(html, /#ffcc33|#9d6500|#c98b00|#d8e3b5/);
+});
+
 test("lead draft renders configured identity together with the complete demonstrative menu and testimonials", async () => {
-  const { createLeadDocument } = await import("../../../../../server/prototypes/template-registry");
-  const document = createLeadDocument({ name: "Burger Central", address: "Rua registrada, 42", phone: "11999998888", rating: 4.3, userRatingCount: 12 });
+  const { createLeadDocument } = await import(
+    "../../../../../server/prototypes/template-registry"
+  );
+  const document = createLeadDocument({
+    name: "Burger Central",
+    address: "Rua registrada, 42",
+    phone: "11999998888",
+    rating: 4.3,
+    userRatingCount: 12,
+  });
   const html = await render(document);
   assert.ok(html.includes("Burger Central"));
   assert.ok(html.includes("Rua registrada, 42"));
   assert.ok(html.includes('aria-label="4,3 de 5 estrelas"'));
   assert.ok(html.includes("Mais de 12 boas mordidas"));
   assert.ok(html.includes("Mais de 12 avaliações"));
-  assert.ok(html.includes(`Desde ${brasaBurgerDefaultDocument.business.foundedYear}`));
-  assert.ok(html.includes("Marina Costa"));
+  assert.ok(
+    html.includes(`Desde ${brasaBurgerDefaultDocument.business.foundedYear}`),
+  );
+  assert.ok(html.includes("Conte como foi sua experiência"));
   assert.ok(html.includes("BRASA CLÁSSICO"));
   assert.ok(html.includes('href="#cardapio"'));
-  const withYear = editorDocumentReducer(document, { type: "sectionField", path: "business.foundedYear", value: 2020 });
+  const withYear = editorDocumentReducer(document, {
+    type: "sectionField",
+    path: "business.foundedYear",
+    value: 2020,
+  });
   assert.equal(withYear.business.foundedYear, 2020);
-  assert.equal(document.business.foundedYear, brasaBurgerDefaultDocument.business.foundedYear);
+  assert.equal(
+    document.business.foundedYear,
+    brasaBurgerDefaultDocument.business.foundedYear,
+  );
   assert.ok((await render(withYear)).includes("Desde 2020"));
+});
+
+test("the configured headline and service copy render together with the complete demonstrative template", async () => {
+  const { createHamburgueriaDocumentFromConfig } = await import(
+    "../../../../../server/prototypes/template-registry"
+  );
+  const { prototypeConfigurationSchema } = await import(
+    "../../../schemas/prototype-configuration.schema"
+  );
+  const doc = createHamburgueriaDocumentFromConfig(
+    prototypeConfigurationSchema.parse({
+      businessName: "Burger Central",
+      headline: "SABOR DA CIDADE\nNA SUA CASA",
+      hamburgueria: {
+        modes: { delivery: true, pickup: false, dineIn: false },
+        hoursSummary: "Quinta a domingo, das 18h às 23h",
+        deliveryRegion: "Centro e Santa Helena",
+      },
+    }),
+  );
+  const html = await render(doc);
+  for (const text of [
+    "SABOR DA CIDADE",
+    "NA SUA CASA",
+    "Quinta a domingo, das 18h às 23h",
+    "Centro e Santa Helena",
+    "BRASA CLÁSSICO",
+  ])
+    assert.ok(html.includes(text), text);
+  assert.doesNotMatch(
+    html,
+    /Peça pelo WhatsApp ou direto no balcão|Prefere buscar\?|Delivery e retirada encerram/,
+  );
+  assert.ok(html.includes('id="cardapio"'));
+  assert.ok(html.includes('id="nossa-historia"'));
+  assert.ok(html.includes('id="avaliacoes"'));
 });
 
 test("cleared supporting text stays valid and disappears from the preview without empty text blocks", async () => {
   let document = createEditorDocument();
-  document = editorDocumentReducer(document, { type: "hero", field: "eyebrow", value: "   " });
-  document = editorDocumentReducer(document, { type: "heroDescription", index: 0, value: "" });
-  document = editorDocumentReducer(document, { type: "heroDescription", index: 1, value: "" });
+  document = editorDocumentReducer(document, {
+    type: "hero",
+    field: "eyebrow",
+    value: "   ",
+  });
+  document = editorDocumentReducer(document, {
+    type: "heroDescription",
+    index: 0,
+    value: "",
+  });
+  document = editorDocumentReducer(document, {
+    type: "heroDescription",
+    index: 1,
+    value: "",
+  });
   document.business.tagline = "";
   document.business.brandLines[1] = "";
-  const { hero, story, menu, faq, location, footer, service, qualities, howToOrder, reviews } = document.content;
+  const {
+    hero,
+    story,
+    menu,
+    faq,
+    location,
+    footer,
+    service,
+    qualities,
+    howToOrder,
+    reviews,
+  } = document.content;
   hero.headline[1] = "";
-  hero.hoursSummary = hero.serviceSummary = hero.bottomNote = hero.badgeText = "";
+  hero.hoursSummary =
+    hero.serviceSummary =
+    hero.bottomNote =
+    hero.badgeText =
+      "";
   hero.badgeLines = ["", ""];
   story.eyebrow = "";
   story.paragraphs = ["", "   "];
@@ -73,35 +176,76 @@ test("cleared supporting text stays valid and disappears from the preview withou
   faq.intro = ["", ""];
   faq.headline[1] = "";
   menu.note = menu.vegetarianNote = menu.customizationNote = menu.eyebrow = "";
-  menu.products.forEach(product => { product.description = " "; product.badge = ""; product.allergens = ""; });
-  qualities.items.forEach(item => { item.description = ""; });
-  howToOrder.steps.forEach(step => { step.body = ""; });
-  reviews.entries.forEach(review => { review.role = ""; });
-  location.description = location.mapPlaceTagline = location.mapCaption = location.mapRoad = location.mapAvenue = "";
+  menu.products.forEach((product) => {
+    product.description = " ";
+    product.badge = "";
+    product.allergens = "";
+  });
+  qualities.items.forEach((item) => {
+    item.description = "";
+  });
+  howToOrder.steps.forEach((step) => {
+    step.body = "";
+  });
+  reviews.entries.forEach((review) => {
+    review.role = "";
+  });
+  location.description =
+    location.mapPlaceTagline =
+    location.mapCaption =
+    location.mapRoad =
+    location.mapAvenue =
+      "";
   footer.serviceLines = footer.signature = ["", ""];
-  service.orderingHoursNote = service.paymentMethodsText = service.pickupFeeText = "";
+  service.orderingHoursNote =
+    service.paymentMethodsText =
+    service.pickupFeeText =
+      "";
   service.delivery.neighborhoodsSummary = service.delivery.priceRangeText = "";
   assert.deepEqual(validateEditorDocument(document), {});
   schemaCheck(document);
   const html = await render(getPreviewDocument(document));
-  for (const marker of ["hero-description ", "hero-service ", "hero-stamp ", "hero-bottom ", "story-signature ", "menu-footer "])
+  for (const marker of [
+    "hero-description ",
+    "hero-service ",
+    "hero-stamp ",
+    "hero-bottom ",
+    "story-signature ",
+    "menu-footer ",
+  ])
     assert.ok(!html.includes(marker), marker);
-  assert.doesNotMatch(html, /<(?:p|small|strong)[^>]*>\s*<\/(?:p|small|strong)>/);
+  assert.doesNotMatch(
+    html,
+    /<(?:p|small|strong)[^>]*>\s*<\/(?:p|small|strong)>/,
+  );
   assert.ok(html.includes("BRASA CLÁSSICO"));
   assert.ok(html.includes('href="#cardapio"'));
 });
 
 test("essential names, headings, button labels and text limits remain validated", () => {
   for (const mutate of [
-    (document: HamburgueriaPrototypeDocument) => { document.business.name = ""; },
-    (document: HamburgueriaPrototypeDocument) => { document.content.menu.products[0].name = ""; },
-    (document: HamburgueriaPrototypeDocument) => { document.content.hero.headline[0] = ""; },
-    (document: HamburgueriaPrototypeDocument) => { document.content.hero.primaryCtaLabel = ""; },
-    (document: HamburgueriaPrototypeDocument) => { document.content.hero.eyebrow = "x".repeat(121); },
+    (document: HamburgueriaPrototypeDocument) => {
+      document.business.name = "";
+    },
+    (document: HamburgueriaPrototypeDocument) => {
+      document.content.menu.products[0].name = "";
+    },
+    (document: HamburgueriaPrototypeDocument) => {
+      document.content.hero.headline[0] = "";
+    },
+    (document: HamburgueriaPrototypeDocument) => {
+      document.content.hero.primaryCtaLabel = "";
+    },
+    (document: HamburgueriaPrototypeDocument) => {
+      document.content.hero.eyebrow = "x".repeat(121);
+    },
   ]) {
     const document = createEditorDocument();
     mutate(document);
-    assert.equal(hamburgueriaPrototypeDocumentSchema.safeParse(document).success, false);
+    assert.equal(
+      hamburgueriaPrototypeDocumentSchema.safeParse(document).success,
+      false,
+    );
   }
 });
 
@@ -113,18 +257,25 @@ test("partial multiline copy has no orphan breaks and clearing social text leave
   document.contact.instagramLabel = "";
   const html = await render(document);
   schemaCheck(document);
-  assert.match(html, /<p class="hero-description [^"]*">Descrição restante<\/p>/);
+  assert.match(
+    html,
+    /<p class="hero-description [^"]*">Descrição restante<\/p>/,
+  );
   assert.match(html, /<p>Introdução restante<\/p>/);
   assert.ok(!html.includes("location-social "));
 });
 
 test("menu renders a product list and only reviews remain in a carousel", async () => {
   const html = await render(createEditorDocument());
-  assert.equal([...html.matchAll(/aria-roledescription="carrossel"/g)].length, 1);
-  for (const label of ["Produtos anteriores", "Próximos produtos", "Deslize para ver mais"]) assert.ok(!html.includes(label), label);
+  assert.equal(
+    [...html.matchAll(/aria-roledescription="carrossel"/g)].length,
+    1,
+  );
+  for (const label of ["Produtos anteriores", "Próximos produtos"])
+    assert.ok(!html.includes(label), label);
   assert.ok(html.includes('id="menu-grid"'));
   assert.ok(html.includes("BRASA CLÁSSICO"));
-  assert.ok(html.includes("Marina Costa"));
+  assert.ok(html.includes("Conte como foi sua experiência"));
   assert.ok(!html.includes("Pedir brasa clássico pelo WhatsApp"));
   assert.ok(html.includes("Pedir pelo WhatsApp"));
 });
@@ -133,7 +284,11 @@ test("menu uses two desktop columns and one mobile column with text before the r
   const html = await render(createEditorDocument());
   assert.ok(html.includes("menu-grid grid grid-cols-2"));
   assert.ok(html.includes("max-[900px]:grid-cols-1"));
-  const cards = [...html.matchAll(/<article\b[^>]*class="product-card [^"]*"[^>]*>([\s\S]*?)<\/article>/g)];
+  const cards = [
+    ...html.matchAll(
+      /<article\b[^>]*class="product-card [^"]*"[^>]*>([\s\S]*?)<\/article>/g,
+    ),
+  ];
   assert.ok(cards.length > 0);
   for (const [, card] of cards) {
     assert.ok(card.indexOf("product-body") < card.indexOf("product-image"));
@@ -141,31 +296,38 @@ test("menu uses two desktop columns and one mobile column with text before the r
     assert.ok(!card.includes("product-order"));
     assert.doesNotMatch(card, /<(?:a|button)\b/);
   }
-  assert.ok(html.includes("reviews-loop-track"));
+  assert.ok(html.includes('id="reviews-carousel"'));
 });
 
-test("reviews loop hides its repeated copy from assistive technology and disables looping for zero or one review", async () => {
+test("reviews remain readable without duplicated testimonials, including short and empty lists", async () => {
   const document = createEditorDocument();
+  document.content.reviews.entries.forEach((review) => {
+    review.demonstrative = false;
+  });
   const html = await render(document);
-  assert.match(html, /data-looping="true"/);
+  assert.ok(html.includes('id="reviews-carousel"'));
   assert.ok(!html.includes("Pausar animação"));
   assert.ok(!html.includes("Retomar animação"));
-  assert.match(html, /reviews-loop-copy" aria-hidden="true" inert=""/);
-  const styles = readFileSync("src/components/prototypes/templates/hamburgueria/hamburgueria.css", "utf8");
-  assert.match(styles, /from \{ transform: translateX\(-50%\); \}/);
-  assert.match(styles, /prefers-reduced-motion: reduce/);
-  document.content.reviews.entries = document.content.reviews.entries.slice(0, 2);
+  assert.ok(html.includes("Deslize para ver mais"));
+  assert.ok(!html.includes("reviews-loop-copy"));
+  assert.equal([...html.matchAll(/<figure/g)].length, 3);
+  document.content.reviews.entries = document.content.reviews.entries.slice(
+    0,
+    2,
+  );
   const two = await render(document);
-  assert.match(two, /data-looping="true"/);
-  assert.equal([...two.matchAll(/<figure/g)].length, 8);
-  document.content.reviews.entries = document.content.reviews.entries.slice(0, 1);
+  assert.equal([...two.matchAll(/<figure/g)].length, 2);
+  document.content.reviews.entries = document.content.reviews.entries.slice(
+    0,
+    1,
+  );
   const single = await render(document);
-  assert.match(single, /data-looping="false"/);
+  assert.equal([...single.matchAll(/<figure/g)].length, 1);
   assert.ok(!single.includes("reviews-loop-copy"));
   assert.ok(!single.includes("Pausar animação"));
   document.content.reviews.entries = [];
   const empty = await render(document);
-  assert.ok(empty.includes("Nenhum depoimento disponível no momento."));
+  assert.ok(empty.includes("Conte como foi sua experiência"));
   assert.ok(!empty.includes("reviews-loop-copy"));
 });
 
@@ -174,19 +336,33 @@ test("editor destinations exist in the real template without publishing selectio
   const html = await render(document);
   for (const [section] of editorSections) {
     const id = getPreviewSectionId(section, document.sections);
-    if (id) assert.ok(html.includes(`id="${id}"`), `Missing preview target: ${section}`);
+    if (id)
+      assert.ok(
+        html.includes(`id="${id}"`),
+        `Missing preview target: ${section}`,
+      );
   }
   assert.ok(!html.includes("data-prospecta-selected-section"));
   assert.ok(!html.includes("data-prospecta-editor-selection"));
 });
 
 test("editor actions update the existing landing page and reset restores its content", async () => {
-  let document = editorDocumentReducer(createEditorDocument(), { type: "heroHeadline", index: 0, value: "TÍTULO DO EDITOR" });
-  document = editorDocumentReducer(document, { type: "section", field: "menu", value: false });
+  let document = editorDocumentReducer(createEditorDocument(), {
+    type: "heroHeadline",
+    index: 0,
+    value: "TÍTULO DO EDITOR",
+  });
+  document = editorDocumentReducer(document, {
+    type: "section",
+    field: "menu",
+    value: false,
+  });
   const edited = await render(document);
   assert.match(edited, /TÍTULO DO EDITOR/);
   assert.doesNotMatch(edited, /(?:id|href)="(?:#)?cardapio"/);
-  const restored = await render(editorDocumentReducer(document, { type: "reset" }));
+  const restored = await render(
+    editorDocumentReducer(document, { type: "reset" }),
+  );
   assert.match(restored, /NA BRASA\./);
   assert.match(restored, /id="cardapio"/);
   assert.doesNotMatch(restored, /TÍTULO DO EDITOR/);
@@ -233,9 +409,12 @@ test("general WhatsApp order remains available without individual product button
 test("reviews and their stars follow the document ratings", async () => {
   const document = structuredClone(brasaBurgerDefaultDocument);
   document.content.reviews.rating = 2;
+  document.content.reviews.ratingSource = document.content.reviews.countSource =
+    "provided";
   document.content.reviews.entries = [
     {
       id: "nova-avaliacao",
+      demonstrative: false,
       name: "Cliente novo",
       initials: "CN",
       role: "Cliente",
@@ -292,11 +471,30 @@ test("missing runtime references degrade without throwing", async () => {
 
 test("editor menu operations reach the real landing page including ordering, extras and cleared features", async () => {
   let document = createEditorDocument();
-  document = editorDocumentReducer(document, { type: "menu/product/add", id: "novo-editor", categoryId: "burgers" });
-  document = editorDocumentReducer(document, { type: "menu/product/edit", id: "novo-editor", changes: { name: "Produto do editor", priceCents: 1923 } });
-  document = editorDocumentReducer(document, { type: "menu/extra/add", id: "extra-editor" });
-  document = editorDocumentReducer(document, { type: "menu/extra/edit", id: "extra-editor", changes: { name: "Adicional do editor", priceCents: 123 } });
-  document = editorDocumentReducer(document, { type: "menu/category/edit", id: "burgers", label: "Categoria do editor" });
+  document = editorDocumentReducer(document, {
+    type: "menu/product/add",
+    id: "novo-editor",
+    categoryId: "burgers",
+  });
+  document = editorDocumentReducer(document, {
+    type: "menu/product/edit",
+    id: "novo-editor",
+    changes: { name: "Produto do editor", priceCents: 1923 },
+  });
+  document = editorDocumentReducer(document, {
+    type: "menu/extra/add",
+    id: "extra-editor",
+  });
+  document = editorDocumentReducer(document, {
+    type: "menu/extra/edit",
+    id: "extra-editor",
+    changes: { name: "Adicional do editor", priceCents: 123 },
+  });
+  document = editorDocumentReducer(document, {
+    type: "menu/category/edit",
+    id: "burgers",
+    label: "Categoria do editor",
+  });
   const html = await render(getPreviewDocument(document));
   assert.match(html, /Produto do editor/);
   assert.match(html, /19,23/);
@@ -304,15 +502,29 @@ test("editor menu operations reach the real landing page including ordering, ext
   assert.match(html, /1,23/);
   assert.match(html, /Categoria do editor/);
   const id = document.content.menu.products[1].id;
-  document = editorDocumentReducer(document, { type: "menu/product/move", id, direction: -1 });
+  document = editorDocumentReducer(document, {
+    type: "menu/product/move",
+    id,
+    direction: -1,
+  });
   const reordered = await render(document);
-  assert.ok(reordered.indexOf(document.content.menu.products[0].name + "</h3>") < reordered.indexOf(document.content.menu.products[1].name + "</h3>"));
-  document = editorDocumentReducer(document, { type: "menu/product/delete", id: document.content.story.featured.productId! });
+  assert.ok(
+    reordered.indexOf(document.content.menu.products[0].name + "</h3>") <
+      reordered.indexOf(document.content.menu.products[1].name + "</h3>"),
+  );
+  document = editorDocumentReducer(document, {
+    type: "menu/product/delete",
+    id: document.content.story.featured.productId!,
+  });
   schemaCheck(document);
   const removed = await render(document);
   assert.doesNotMatch(removed, /class="combo-panel /);
   assert.match(removed, /id="nossa-historia"/);
-  for (const category of document.content.menu.categories) document = editorDocumentReducer(document, { type: "menu/category/delete", id: category.id });
+  for (const category of document.content.menu.categories)
+    document = editorDocumentReducer(document, {
+      type: "menu/category/delete",
+      id: category.id,
+    });
   schemaCheck(document);
   const empty = await render(document);
   assert.match(empty, /Nenhum produto disponível no momento/);
@@ -323,6 +535,101 @@ function schemaCheck(document: HamburgueriaPrototypeDocument) {
   hamburgueriaPrototypeDocumentSchema.parse(document);
 }
 
+test("menu and final call to action keep direct orders available when Location is hidden", async () => {
+  const document = createEditorDocument();
+  document.contact.whatsapp = "5511999999999";
+  document.sections.location = false;
+  const html = await render(document);
+  const menu = html.slice(
+    html.indexOf('id="cardapio"'),
+    html.indexOf('id="nossa-historia"'),
+  );
+  const final = html.slice(
+    html.indexOf('id="chamada-final"'),
+    html.indexOf("<footer"),
+  );
+  for (const section of [menu, final]) {
+    assert.match(section, /href="https:\/\/wa.me\/5511999999999\?text=/);
+    assert.ok(section.includes("Pedir pelo WhatsApp"));
+  }
+  assert.doesNotMatch(html, /href="#onde-estamos"/);
+  assert.doesNotMatch(menu, /product-order/);
+  document.sections.location = true;
+  const withLocation = await render(document);
+  const contact = withLocation.slice(
+    withLocation.indexOf('id="contato"'),
+    withLocation.indexOf('class="location-visual'),
+  );
+  assert.ok(
+    !contact.includes("Canal ilustrativo"),
+    "a configured real contact is not described as fictitious",
+  );
+});
+
+test("imported rating totals and demonstrative testimonials have distinct provenance", async () => {
+  const { createLeadDocument } = await import(
+    "../../../../../server/prototypes/template-registry"
+  );
+  const document = createLeadDocument({
+    name: "Burger Central",
+    address: null,
+    phone: null,
+    rating: 4.3,
+    userRatingCount: 12,
+  });
+  const html = await render(document);
+  assert.ok(!html.includes("Resumo de avaliações do lead"));
+  assert.ok(!html.includes("Depoimento ilustrativo"));
+  const reviews = html.slice(
+    html.indexOf('id="avaliacoes"'),
+    html.indexOf('id="onde-estamos"'),
+  );
+  assert.doesNotMatch(reviews, /href="#i-check"/);
+  assert.ok(html.includes("Conte como foi sua experiência"));
+  assert.ok(html.includes("BRASA CLÁSSICO"));
+});
+
+test("explicit real testimonials lose the illustrative label without marking them verified", async () => {
+  const document = createEditorDocument();
+  document.content.reviews.entries = [
+    {
+      ...document.content.reviews.entries[0],
+      demonstrative: false,
+      name: "Cliente real",
+      sourceUrl: "https://example.com/review",
+    },
+  ];
+  const html = await render(document);
+  const section = html.slice(
+    html.indexOf('id="avaliacoes"'),
+    html.indexOf('id="onde-estamos"'),
+  );
+  assert.ok(section.includes('href="https://example.com/review"'));
+  assert.ok(!section.includes("Depoimento ilustrativo"));
+  assert.ok(!section.includes('href="#i-check"'));
+});
+
+test("legacy demos and partially imported totals do not masquerade as confirmed reviews", async () => {
+  const document = createEditorDocument();
+  delete document.content.reviews.ratingSource;
+  delete document.content.reviews.countSource;
+  document.content.reviews.entries.forEach((review) => {
+    delete review.demonstrative;
+  });
+  assert.ok(
+    (await render(document)).includes("Conte como foi sua experiência"),
+  );
+  assert.ok(!(await render(document)).includes("Depoimento ilustrativo"));
+  document.content.reviews.ratingSource = "lead";
+  schemaCheck(document);
+  assert.ok(
+    !(await render(document)).includes("Resumo parcialmente ilustrativo"),
+  );
+  assert.ok(
+    !(await render(document)).includes('aria-label="4,9 de 5 estrelas"'),
+  );
+});
+
 test("default content retains the current Brasa Burger copy and prices", async () => {
   const html = await render(brasaBurgerDefaultDocument);
   for (const text of [
@@ -332,9 +639,9 @@ test("default content retains the current Brasa Burger copy and prices", async (
     "BRASA CLÁSSICO",
     "27,90",
     "É BOM. MAS PODE PERGUNTAR.",
-    "Marina Costa",
-    "Rua das Brasas, 180",
-    "Bora de Brasa",
+    "Conte como foi sua experiência",
+    "Consulte o endereço pelo atendimento.",
+    "Pedir pelo WhatsApp",
     "Fome de coisa boa.",
   ]) {
     assert.ok(html.includes(text), `Missing default content: ${text}`);
@@ -343,23 +650,79 @@ test("default content retains the current Brasa Burger copy and prices", async (
 
 test("section editor changes reach the existing renderer and empty reviews and FAQ remain usable", async () => {
   let document = createEditorDocument();
-  document = editorDocumentReducer(document, { type: "sectionField", path: "content.story.headline.0", value: "HISTÓRIA EDITADA" });
-  document = editorDocumentReducer(document, { type: "sectionField", path: "content.location.description", value: "LOCALIZAÇÃO EDITADA" });
-  document = editorDocumentReducer(document, { type: "sectionField", path: "business.address.postalCode", value: "13000-000" });
-  document = editorDocumentReducer(document, { type: "sectionField", path: "content.finalCallToAction.title", value: "CHAMADA EDITADA" });
-  document = editorDocumentReducer(document, { type: "sectionField", path: "content.footer.signature.0", value: "RODAPÉ EDITADO" });
-  document = editorDocumentReducer(document, { type: "sectionItem/edit", list: "reviews", id: document.content.reviews.entries[0].id, changes: { quote: "DEPOIMENTO EDITADO", rating: 2 } });
-  document = editorDocumentReducer(document, { type: "sectionItem/edit", list: "faq", id: document.content.faq.items[0].id, changes: { question: "PERGUNTA EDITADA", answer: "RESPOSTA EDITADA" } });
-  document = editorDocumentReducer(document, { type: "sectionStrings/edit", list: "openingHours", index: 0, value: "HORÁRIO EDITADO" });
+  document = editorDocumentReducer(document, {
+    type: "sectionField",
+    path: "content.story.headline.0",
+    value: "HISTÓRIA EDITADA",
+  });
+  document = editorDocumentReducer(document, {
+    type: "sectionField",
+    path: "content.location.description",
+    value: "LOCALIZAÇÃO EDITADA",
+  });
+  document = editorDocumentReducer(document, {
+    type: "sectionField",
+    path: "business.address.postalCode",
+    value: "13000-000",
+  });
+  document = editorDocumentReducer(document, {
+    type: "sectionField",
+    path: "content.finalCallToAction.title",
+    value: "CHAMADA EDITADA",
+  });
+  document = editorDocumentReducer(document, {
+    type: "sectionField",
+    path: "content.footer.signature.0",
+    value: "RODAPÉ EDITADO",
+  });
+  document = editorDocumentReducer(document, {
+    type: "sectionItem/edit",
+    list: "reviews",
+    id: document.content.reviews.entries[0].id,
+    changes: { quote: "DEPOIMENTO EDITADO", rating: 2, demonstrative: false },
+  });
+  document = editorDocumentReducer(document, {
+    type: "sectionItem/edit",
+    list: "faq",
+    id: document.content.faq.items[0].id,
+    changes: { question: "PERGUNTA EDITADA", answer: "RESPOSTA EDITADA" },
+  });
+  document = editorDocumentReducer(document, {
+    type: "sectionStrings/edit",
+    list: "openingHours",
+    index: 0,
+    value: "HORÁRIO EDITADO",
+  });
   const html = await render(document);
-  for (const text of ["HISTÓRIA EDITADA", "LOCALIZAÇÃO EDITADA", "13000-000", "CHAMADA EDITADA", "RODAPÉ EDITADO", "DEPOIMENTO EDITADO", "PERGUNTA EDITADA", "RESPOSTA EDITADA", "HORÁRIO EDITADO"]) assert.ok(html.includes(text), text);
+  for (const text of [
+    "HISTÓRIA EDITADA",
+    "LOCALIZAÇÃO EDITADA",
+    "13000-000",
+    "CHAMADA EDITADA",
+    "RODAPÉ EDITADO",
+    "DEPOIMENTO EDITADO",
+    "PERGUNTA EDITADA",
+    "RESPOSTA EDITADA",
+    "HORÁRIO EDITADO",
+  ])
+    assert.ok(html.includes(text), text);
   assert.ok(html.includes('aria-label="2 de 5 estrelas"'));
   assert.ok(html.includes("<details"));
-  for (const review of document.content.reviews.entries) document = editorDocumentReducer(document, { type: "sectionItem/delete", list: "reviews", id: review.id });
-  for (const question of document.content.faq.items) document = editorDocumentReducer(document, { type: "sectionItem/delete", list: "faq", id: question.id });
+  for (const review of document.content.reviews.entries)
+    document = editorDocumentReducer(document, {
+      type: "sectionItem/delete",
+      list: "reviews",
+      id: review.id,
+    });
+  for (const question of document.content.faq.items)
+    document = editorDocumentReducer(document, {
+      type: "sectionItem/delete",
+      list: "faq",
+      id: question.id,
+    });
   schemaCheck(document);
   const empty = await render(document);
-  assert.ok(empty.includes("Nenhum depoimento disponível no momento."));
+  assert.ok(empty.includes("Conte como foi sua experiência"));
   assert.ok(empty.includes("Nenhuma pergunta cadastrada no momento."));
   assert.ok(empty.includes("BRASA CLÁSSICO"));
 });
@@ -387,8 +750,9 @@ test("unresolved uploads are reported and render a fallback without fictitious U
 });
 
 test("image resolver accepts known template assets and validates resolved upload sources", async () => {
-  const { resolveHamburgueriaImage, prepareUploadImages } =
-    await import("../lib/images");
+  const { resolveHamburgueriaImage, prepareUploadImages } = await import(
+    "../lib/images"
+  );
   assert.ok(
     resolveHamburgueriaImage({ source: "template", key: "hero", alt: "Foto" }),
   );

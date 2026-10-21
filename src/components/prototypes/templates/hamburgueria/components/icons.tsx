@@ -19,7 +19,7 @@ export function Icon({
   ...props
 }: SVGProps<SVGSVGElement> & { name: IconName }) {
   return (
-    <svg aria-hidden="true" {...props}>
+    <svg aria-hidden="true" focusable="false" {...props}>
       <use href={`#i-${name}`} />
     </svg>
   );

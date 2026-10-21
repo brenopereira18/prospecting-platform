@@ -42,8 +42,16 @@ export const imageReferenceSchema = z.discriminatedUnion("source", [
   }),
 ]);
 
-const optionalUrlSchema = z.union([
-  z.string().trim().url().max(2048),
+export const optionalWebUrlSchema = z.union([
+  z
+    .string()
+    .trim()
+    .url()
+    .max(2048)
+    .refine(
+      (value) => /^https?:\/\//i.test(value),
+      "Utilize um link HTTP ou HTTPS.",
+    ),
   z.literal(""),
 ]);
 
@@ -81,7 +89,7 @@ export const prototypeBaseSchema = z.strictObject({
   seo: z.strictObject({
     title: prototypeTextSchema(160),
     description: prototypeTextSchema(320),
-    canonicalUrl: optionalUrlSchema.optional(),
+    canonicalUrl: optionalWebUrlSchema.optional(),
     socialImage: imageReferenceSchema.optional(),
   }),
   appearance: z.strictObject({
@@ -99,9 +107,9 @@ export const prototypeBaseSchema = z.strictObject({
   contact: z.strictObject({
     phone: phoneSchema.optional(),
     whatsapp: phoneSchema.optional(),
-    instagramUrl: optionalUrlSchema.optional(),
+    instagramUrl: optionalWebUrlSchema.optional(),
     instagramLabel: z.string().trim().max(80).optional(),
-    mapsUrl: optionalUrlSchema.optional(),
+    mapsUrl: optionalWebUrlSchema.optional(),
   }),
   demo: z.strictObject({
     enabled: z.boolean(),
@@ -120,5 +128,4 @@ export const prototypeBaseSchema = z.strictObject({
     }),
 });
 
-export type PrototypeBaseDocument = z.infer<typeof prototypeBaseSchema>;
 export type ImageReference = z.infer<typeof imageReferenceSchema>;

@@ -7,6 +7,7 @@ import {
   prototypeBaseSchema,
   prototypeIdSchema,
   prototypeTextSchema,
+  optionalWebUrlSchema,
 } from "../../../schemas/prototype-base.schema";
 
 export const HAMBURGUERIA_TEMPLATE_ASSETS = [
@@ -22,6 +23,26 @@ export const HAMBURGUERIA_FONT_KEYS = [
   "barlow-condensed",
   "caveat",
 ] as const;
+
+// Editorial metadata: these paths were explicitly supplied or reviewed, not
+// factual values copied from the template. Older documents may omit it.
+export const HAMBURGUERIA_CONFIRMABLE_FIELDS = [
+  "business.address.street",
+  "business.address.neighborhood",
+  "business.address.city",
+  "business.address.state",
+  "business.address.postalCode",
+  "contact.mapsUrl",
+  "content.hero.hoursSummary",
+  "content.service.openingHours",
+  "content.footer.serviceLines.1",
+  "content.service.orderingHoursNote",
+  "content.service.delivery.neighborhoodsSummary",
+  "content.service.delivery.priceRangeText",
+  "content.service.delivery.minimumFeeCents",
+] as const;
+export type HamburgueriaConfirmableField =
+  (typeof HAMBURGUERIA_CONFIRMABLE_FIELDS)[number];
 
 export const HAMBURGUERIA_ICON_KEYS = [
   "burger",
@@ -43,7 +64,12 @@ export const HAMBURGUERIA_ICON_KEYS = [
 const supportingTextSchema = (max: number) => z.string().trim().max(max);
 
 const iconKeySchema = z.enum(HAMBURGUERIA_ICON_KEYS);
-export const HAMBURGUERIA_MENU_LIMITS = { categories: 12, products: 100, extras: 40, priceCents: 100_000_000 } as const;
+export const HAMBURGUERIA_MENU_LIMITS = {
+  categories: 12,
+  products: 100,
+  extras: 40,
+  priceCents: 100_000_000,
+} as const;
 const sectionIds = [
   "hero",
   "qualities",
@@ -92,7 +118,11 @@ const menuProductSchema = z
     categoryId: prototypeIdSchema,
     name: prototypeTextSchema(100),
     description: supportingTextSchema(600),
-    priceCents: z.number().int().nonnegative().max(HAMBURGUERIA_MENU_LIMITS.priceCents),
+    priceCents: z
+      .number()
+      .int()
+      .nonnegative()
+      .max(HAMBURGUERIA_MENU_LIMITS.priceCents),
     image: templateImageSchema.optional(),
     icon: iconKeySchema.optional(),
     badge: supportingTextSchema(60).optional(),
@@ -111,9 +141,8 @@ const reviewSchema = z.strictObject({
   role: supportingTextSchema(100),
   quote: prototypeTextSchema(600),
   rating: z.number().min(0).max(5).optional(),
-  sourceUrl: z
-    .union([z.string().trim().url().max(2048), z.literal("")])
-    .optional(),
+  sourceUrl: optionalWebUrlSchema.optional(),
+  demonstrative: z.boolean().optional(),
 });
 
 const hamburgueriaContentSchema = z.strictObject({
@@ -131,7 +160,10 @@ const hamburgueriaContentSchema = z.strictObject({
   hero: z.strictObject({
     eyebrow: supportingTextSchema(120),
     headline: z.tuple([prototypeTextSchema(60), supportingTextSchema(60)]),
-    description: z.tuple([supportingTextSchema(180), supportingTextSchema(180)]),
+    description: z.tuple([
+      supportingTextSchema(180),
+      supportingTextSchema(180),
+    ]),
     image: templateImageSchema,
     primaryCtaLabel: prototypeTextSchema(60),
     secondaryCtaLabel: prototypeTextSchema(60),
@@ -164,7 +196,9 @@ const hamburgueriaContentSchema = z.strictObject({
     note: supportingTextSchema(120),
     categoryGroupLabel: prototypeTextSchema(100),
     defaultCategoryId: prototypeIdSchema.nullable(),
-    categories: z.array(categorySchema).max(HAMBURGUERIA_MENU_LIMITS.categories),
+    categories: z
+      .array(categorySchema)
+      .max(HAMBURGUERIA_MENU_LIMITS.categories),
     products: z.array(menuProductSchema).max(HAMBURGUERIA_MENU_LIMITS.products),
     extrasHeading: supportingTextSchema(120),
     extras: z
@@ -172,7 +206,11 @@ const hamburgueriaContentSchema = z.strictObject({
         z.strictObject({
           id: prototypeIdSchema,
           name: prototypeTextSchema(100),
-          priceCents: z.number().int().nonnegative().max(HAMBURGUERIA_MENU_LIMITS.priceCents),
+          priceCents: z
+            .number()
+            .int()
+            .nonnegative()
+            .max(HAMBURGUERIA_MENU_LIMITS.priceCents),
         }),
       )
       .max(HAMBURGUERIA_MENU_LIMITS.extras),
@@ -264,6 +302,8 @@ const hamburgueriaContentSchema = z.strictObject({
     title: prototypeTextSchema(120),
     rating: z.number().min(0).max(5),
     count: z.number().int().nonnegative().max(100_000_000),
+    ratingSource: z.enum(["demo", "lead", "provided"]).optional(),
+    countSource: z.enum(["demo", "lead", "provided"]).optional(),
     starsLabel: prototypeTextSchema(40),
     countLabel: supportingTextSchema(80),
     entries: z.array(reviewSchema).max(30),
@@ -323,7 +363,10 @@ const hamburgueriaContentSchema = z.strictObject({
     ]),
     serviceHeading: supportingTextSchema(80),
     faqLinkLabel: prototypeTextSchema(80),
-    serviceLines: z.tuple([supportingTextSchema(120), supportingTextSchema(120)]),
+    serviceLines: z.tuple([
+      supportingTextSchema(120),
+      supportingTextSchema(120),
+    ]),
     signature: z.tuple([supportingTextSchema(120), supportingTextSchema(120)]),
     buttonLabel: prototypeTextSchema(80),
     copyrightYear: z.number().int().min(2000).max(2200),
@@ -367,6 +410,14 @@ export const hamburgueriaPrototypeDocumentSchema = z
   .strictObject({
     ...prototypeBaseSchema.shape,
     category: z.literal("hamburgueria"),
+    confirmedFields: z
+      .array(z.enum(HAMBURGUERIA_CONFIRMABLE_FIELDS))
+      .max(HAMBURGUERIA_CONFIRMABLE_FIELDS.length)
+      .refine(
+        (fields) => new Set(fields).size === fields.length,
+        "Campos confirmados não podem se repetir.",
+      )
+      .optional(),
     business: prototypeBaseSchema.shape.business.extend({
       tagline: supportingTextSchema(160),
       brandLines: z.tuple([prototypeTextSchema(40), supportingTextSchema(40)]),
@@ -432,7 +483,11 @@ export const hamburgueriaPrototypeDocumentSchema = z
     );
 
     const defaultCategoryId = document.content.menu.defaultCategoryId;
-    if (categories.length ? defaultCategoryId === null || !categoryIds.has(defaultCategoryId) : defaultCategoryId !== null) {
+    if (
+      categories.length
+        ? defaultCategoryId === null || !categoryIds.has(defaultCategoryId)
+        : defaultCategoryId !== null
+    ) {
       ctx.addIssue({
         code: "custom",
         path: ["content", "menu", "defaultCategoryId"],
@@ -451,14 +506,20 @@ export const hamburgueriaPrototypeDocumentSchema = z
     });
 
     const featured = document.content.story.featured;
-    const featuredProduct = featured.productId === null ? undefined : productById.get(featured.productId);
+    const featuredProduct =
+      featured.productId === null
+        ? undefined
+        : productById.get(featured.productId);
     if (featured.productId !== null && !featuredProduct) {
       ctx.addIssue({
         code: "custom",
         path: ["content", "story", "featured", "productId"],
         message: "O produto em destaque precisa existir no cardápio.",
       });
-    } else if (featuredProduct && featuredProduct.categoryId !== featured.targetCategoryId) {
+    } else if (
+      featuredProduct &&
+      featuredProduct.categoryId !== featured.targetCategoryId
+    ) {
       ctx.addIssue({
         code: "custom",
         path: ["content", "story", "featured", "targetCategoryId"],
@@ -467,7 +528,12 @@ export const hamburgueriaPrototypeDocumentSchema = z
       });
     }
 
-    if (featured.productId === null ? featured.targetCategoryId !== null : featured.targetCategoryId === null || !categoryIds.has(featured.targetCategoryId)) {
+    if (
+      featured.productId === null
+        ? featured.targetCategoryId !== null
+        : featured.targetCategoryId === null ||
+          !categoryIds.has(featured.targetCategoryId)
+    ) {
       ctx.addIssue({
         code: "custom",
         path: ["content", "story", "featured", "targetCategoryId"],

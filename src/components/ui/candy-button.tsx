@@ -1,7 +1,7 @@
 import React from "react";
 import { cn } from "@/lib/utils";
 
-export type CandyButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement>;
+type CandyButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement>;
 
 export function CandyButton({
   className,

@@ -1,26 +1,91 @@
 /* Scoped defaults override Preflight while allowing Tailwind utilities to win. */
 @layer components {
   .hamburgueria-template {
-    --yellow: var(--template-primary, #f5bb16);
-    --yellow-dark: #c98b00;
-    --ink: var(--template-secondary, #141413);
-    --black: #0c0c0b;
-    --paper: var(--template-tertiary, #f6f3ec);
-    --muted: #69665f;
-    --line: #dedad0;
+    --surface: var(--page-surface);
+    --text: var(--page-text);
+    --muted: var(--page-muted);
+    --accent: var(--page-accent);
+    --line: var(--page-line);
+    --control-border: var(--page-control-border);
+    --hover: var(--page-hover);
+    --hover-text: var(--page-hover-text);
+    --focus: var(--page-focus);
 
-    --display: var(--font-hamburgueria-display), Impact, "Arial Narrow", sans-serif;
+    --display:
+      var(--font-hamburgueria-display), Impact, "Arial Narrow", sans-serif;
     --body: var(--font-hamburgueria-body), Arial, sans-serif;
     --hand: var(--font-hamburgueria-hand), cursive;
 
-    background: var(--paper);
-    color: var(--ink);
+    background: var(--surface);
+    color: var(--text);
     font-family: var(--body);
     font-size: 16px;
     line-height: 1.6;
     min-height: 100vh;
     width: 100%;
     isolation: isolate;
+  }
+
+  /* Each surface owns its foreground, muted text and interaction contrast. */
+  .hamburgueria-template .color-card {
+    --surface: var(--card-surface);
+    --text: var(--card-text);
+    --muted: var(--card-muted);
+    --accent: var(--card-accent);
+    --line: var(--card-line);
+    --control-border: var(--card-control-border);
+    --hover: var(--card-hover);
+    --hover-text: var(--card-hover-text);
+    --focus: var(--card-focus);
+    color: var(--text);
+  }
+  .hamburgueria-template .color-soft {
+    --surface: var(--soft-surface);
+    --text: var(--soft-text);
+    --muted: var(--soft-muted);
+    --accent: var(--soft-accent);
+    --line: var(--soft-line);
+    --control-border: var(--soft-control-border);
+    --hover: var(--soft-hover);
+    --hover-text: var(--soft-hover-text);
+    --focus: var(--soft-focus);
+    color: var(--text);
+  }
+  .hamburgueria-template .color-secondary {
+    --surface: var(--secondary-surface);
+    --text: var(--secondary-text);
+    --muted: var(--secondary-muted);
+    --accent: var(--secondary-accent);
+    --line: var(--secondary-line);
+    --control-border: var(--secondary-control-border);
+    --hover: var(--secondary-hover);
+    --hover-text: var(--secondary-hover-text);
+    --focus: var(--secondary-focus);
+    color: var(--text);
+  }
+  .hamburgueria-template .color-deep {
+    --surface: var(--deep-surface);
+    --text: var(--deep-text);
+    --muted: var(--deep-muted);
+    --accent: var(--deep-accent);
+    --line: var(--deep-line);
+    --control-border: var(--deep-control-border);
+    --hover: var(--deep-hover);
+    --hover-text: var(--deep-hover-text);
+    --focus: var(--deep-focus);
+    color: var(--text);
+  }
+  .hamburgueria-template .color-brand {
+    --surface: var(--brand-surface);
+    --text: var(--brand-text);
+    --muted: var(--brand-muted);
+    --accent: var(--brand-accent);
+    --line: var(--brand-line);
+    --control-border: var(--brand-control-border);
+    --hover: var(--brand-hover);
+    --hover-text: var(--brand-hover-text);
+    --focus: var(--brand-focus);
+    color: var(--text);
   }
 
   .hamburgueria-template h1,
@@ -54,19 +119,10 @@
 
   .hamburgueria-template a:focus-visible,
   .hamburgueria-template button:focus-visible,
-  .hamburgueria-template summary:focus-visible {
-    outline: 3px solid var(--yellow-dark);
+  .hamburgueria-template summary:focus-visible,
+  .hamburgueria-template [tabindex]:focus-visible {
+    outline: 3px solid var(--focus);
     outline-offset: 5px;
-  }
-
-  .hamburgueria-template .product-allergens {
-    font-size: 10px !important;
-    min-height: 0 !important;
-    color: #7b756b !important;
-  }
-
-  .hamburgueria-template .service-note {
-    font-size: 11px !important;
   }
 
   .hamburgueria-template .footer-order > p {
@@ -89,15 +145,6 @@
 
   .hamburgueria-template :is(button, a, input, select, textarea, summary) {
     -webkit-tap-highlight-color: transparent;
-  }
-
-  .hamburgueria-template .navigation .nav-active::after {
-    content: "";
-  }
-
-  /* Preflight resets the native dialog's centered margin. */
-  .hamburgueria-template .demo-dialog {
-    margin: auto;
   }
 
   .hamburgueria-template [id] {
@@ -127,60 +174,13 @@
       padding-right: 10px !important;
     }
 
-    .hamburgueria-template .product-allergens {
-      font-size: 9px !important;
-      line-height: 1.5 !important;
-    }
-
     .hamburgueria-template .footer-order > p {
       font-size: 23px !important;
       margin: 0 !important;
     }
   }
 
-  .hamburgueria-template .reviews-loop {
-    container-type: inline-size;
-    --reviews-gap: 24px;
-    --reviews-card-width: calc((100cqw - 48px) / 3);
-  }
-
-  .hamburgueria-template .reviews-loop-viewport {
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    scrollbar-width: none;
-  }
-
-  .hamburgueria-template .reviews-loop-viewport::-webkit-scrollbar { display: none; }
-  .hamburgueria-template .reviews-loop-track { display: flex; width: max-content; }
-  .hamburgueria-template .reviews-loop-group {
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: var(--reviews-card-width);
-    gap: var(--reviews-gap);
-    padding-right: var(--reviews-gap);
-  }
-  .hamburgueria-template .reviews-loop[data-looping="true"] .reviews-loop-track {
-    animation: hamburgueria-reviews-loop var(--reviews-duration) linear infinite;
-  }
-  .hamburgueria-template .reviews-loop-viewport:focus-within .reviews-loop-track {
-    animation-play-state: paused;
-  }
-  @keyframes hamburgueria-reviews-loop {
-    from { transform: translateX(-50%); }
-    to { transform: translateX(0); }
-  }
-  @media (hover: hover) and (pointer: fine) {
-    .hamburgueria-template .reviews-loop-viewport:hover .reviews-loop-track { animation-play-state: paused; }
-  }
-  @media (max-width: 900px) {
-    .hamburgueria-template .reviews-loop { --reviews-gap: 15px; --reviews-card-width: calc((100cqw - 15px) / 2); }
-  }
-  @media (max-width: 700px) {
-    .hamburgueria-template .reviews-loop { --reviews-gap: 16px; --reviews-card-width: 86cqw; }
-  }
   @media (prefers-reduced-motion: reduce) {
-    .hamburgueria-template .reviews-loop-copy,
-    .hamburgueria-template .reviews-loop-group > [aria-hidden="true"] { display: none; }
     .hamburgueria-template *,
     .hamburgueria-template *::before,
     .hamburgueria-template *::after {

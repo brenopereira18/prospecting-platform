@@ -5,7 +5,7 @@ import { brasaBurgerDefaultDocument } from "../data/default-document";
 import { HamburgueriaDocumentProvider } from "./document-provider";
 import { Header } from "./header";
 import { SectionLink } from "./section-link";
-import { OrderLink } from "./contact-links";
+import { OrderLink, SocialLink } from "./contact-links";
 import { InteractionProvider } from "./interaction-provider";
 
 test("simplified header keeps only brand and menu links and respects disabled destinations", () => {
@@ -62,7 +62,8 @@ test("order links use the contact and business name from the supplied document",
 test("demo product orders open the configured WhatsApp directly with the product message", () => {
   const document = structuredClone(brasaBurgerDefaultDocument);
   document.contact.whatsapp = "+55 (11) 99999-9999";
-  document.content.interactions.productOrderMessage = "Quero {productName}, por {price}, da {businessName}.";
+  document.content.interactions.productOrderMessage =
+    "Quero {productName}, por {price}, da {businessName}.";
   const product = document.content.menu.products[0];
   const html = renderToStaticMarkup(
     <HamburgueriaDocumentProvider document={document}>
@@ -89,4 +90,34 @@ test("missing or invalid WhatsApp disables orders without opening a demo or inve
     assert.match(html, /tabindex="-1"/);
     assert.doesNotMatch(html, /href=|contact-dialog|wa\.me/);
   }
+});
+
+test("configured Instagram remains usable in a demonstration", () => {
+  const document = structuredClone(brasaBurgerDefaultDocument);
+  document.contact.instagramUrl = "https://www.instagram.com/burgercentral/";
+  const html = renderToStaticMarkup(
+    <HamburgueriaDocumentProvider document={document}>
+      <InteractionProvider>
+        <SocialLink>Instagram</SocialLink>
+      </InteractionProvider>
+    </HamburgueriaDocumentProvider>,
+  );
+  assert.match(html, /href="https:\/\/www.instagram.com\/burgercentral\/"/);
+  assert.match(html, /target="_blank"/);
+  assert.doesNotMatch(html, /href="#contact-dialog"/);
+});
+
+test("an absent Instagram is omitted in both demos and real documents", () => {
+  const document = structuredClone(brasaBurgerDefaultDocument);
+  const render = () =>
+    renderToStaticMarkup(
+      <HamburgueriaDocumentProvider document={document}>
+        <InteractionProvider>
+          <SocialLink>Instagram</SocialLink>
+        </InteractionProvider>
+      </HamburgueriaDocumentProvider>,
+    );
+  assert.doesNotMatch(render(), /<a\b|contact-dialog/);
+  document.demo.enabled = false;
+  assert.doesNotMatch(render(), /<a\b/);
 });

@@ -24,7 +24,7 @@ export function TemplateImage({
   if (!resolved || failedSource === resolved.src) {
     return (
       <div
-        className={`template-image grid place-items-center [color:var(--yellow)] [background:var(--ink)] ${props.className ?? ""}`}
+        className={`template-image grid place-items-center [color:var(--secondary-accent)] [background:var(--secondary)] ${props.className ?? ""}`}
         style={{
           aspectRatio: `${props.width ?? 1}/${props.height ?? 1}`,
           ...imageStyle,
@@ -46,7 +46,8 @@ export function TemplateImage({
       style={imageStyle}
       // Future remote upload domains do not enter the Next image proxy implicitly.
       unoptimized={
-        image.source === "upload" && (resolved.src.startsWith("https:") || resolved.src.startsWith("blob:"))
+        image.source === "upload" &&
+        (resolved.src.startsWith("https:") || resolved.src.startsWith("blob:"))
           ? true
           : props.unoptimized
       }

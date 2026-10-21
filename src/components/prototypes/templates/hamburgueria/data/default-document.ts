@@ -29,8 +29,8 @@ export const brasaBurgerDefaultDocument: HamburgueriaPrototypeDocument =
     seo: {
       title: "Brasa Burger — Fome de coisa boa",
       description:
-        "Brasa Burger: burgers artesanais, cheddar derretido e batata crocante. Conheça o cardápio, a nossa casa e as informações de atendimento desta hamburgueria fictícia.",
-      canonicalUrl: "https://brasa-burger-breno.brenopereirabetti.chatgpt.site",
+        "Brasa Burger: burgers artesanais, cheddar derretido e batata crocante. Conheça o cardápio, a nossa casa e as informações de atendimento da hamburgueria.",
+      canonicalUrl: "",
     },
     appearance: {
       colors: { primary: "#f5bb16", secondary: "#141413", tertiary: "#f6f3ec" },
@@ -39,9 +39,8 @@ export const brasaBurgerDefaultDocument: HamburgueriaPrototypeDocument =
     contact: {
       whatsapp: "",
       instagramUrl: "",
-      instagramLabel: "@brasaburger.exemplo",
-      mapsUrl:
-        "https://www.google.com/maps/search/?api=1&query=S%C3%A3o+Paulo+Brasil",
+      instagramLabel: "",
+      mapsUrl: "",
     },
     demo: { enabled: true },
     sections: {
@@ -321,7 +320,7 @@ export const brasaBurgerDefaultDocument: HamburgueriaPrototypeDocument =
         vegetarianLabel: "Vegetariano",
         customizationNote:
           "Quer tirar algum ingrediente? É só avisar no atendimento.",
-        orderButtonLabel: "Pedir",
+        orderButtonLabel: "Pedir pelo WhatsApp",
       },
       service: {
         modes: { delivery: true, pickup: true, dineIn: true },
@@ -400,11 +399,14 @@ export const brasaBurgerDefaultDocument: HamburgueriaPrototypeDocument =
         title: "É BOM. MAS PODE PERGUNTAR.",
         rating: 4.9,
         count: 800,
+        ratingSource: "demo",
+        countSource: "demo",
         starsLabel: "{rating} de 5 estrelas",
         countLabel: "Mais de {count} avaliações",
         entries: [
           {
             id: "marina-costa",
+            demonstrative: true,
             rating: 5,
             initials: "MC",
             name: "Marina Costa",
@@ -414,6 +416,7 @@ export const brasaBurgerDefaultDocument: HamburgueriaPrototypeDocument =
           },
           {
             id: "rafael-lima",
+            demonstrative: true,
             rating: 5,
             initials: "RL",
             name: "Rafael Lima",
@@ -423,6 +426,7 @@ export const brasaBurgerDefaultDocument: HamburgueriaPrototypeDocument =
           },
           {
             id: "beatriz-santos",
+            demonstrative: true,
             rating: 5,
             initials: "BS",
             name: "Beatriz Santos",
@@ -447,9 +451,9 @@ export const brasaBurgerDefaultDocument: HamburgueriaPrototypeDocument =
         mapRoad: "Rua das Brasas",
         mapAvenue: "Av. do Sabor",
         mapPlaceTagline: "Seu próximo lugar favorito.",
-        mapAccessibleLabel: "Mapa ilustrativo de {businessName}",
-        mapLinkLabel: "Ver {city} no mapa",
-        mapCaption: "Localização ilustrativa",
+        mapAccessibleLabel: "Localização de {businessName}",
+        mapLinkLabel: "Ver localização no mapa",
+        mapCaption: "",
         orderLinkLabel: "Pedir pelo WhatsApp",
         socialLinkPrefix: "Instagram",
       },
@@ -462,13 +466,13 @@ export const brasaBurgerDefaultDocument: HamburgueriaPrototypeDocument =
             id: "pagamento",
             question: "Quais são as formas de pagamento?",
             answer:
-              "Na nossa hamburgueria fictícia, aceitamos Pix, cartões de crédito e débito. Nesta demonstração, nenhum pagamento é solicitado ou processado.",
+              "Consulte as formas de pagamento disponíveis com nossa equipe ao fazer seu pedido.",
           },
           {
             id: "entrega",
             question: "Vocês entregam no meu bairro?",
             answer:
-              "Atendemos Vila Brasa (R$ 5,90), Jardim do Fogo (R$ 7,90) e Centro (R$ 9,90). Consulte a disponibilidade no atendimento. Bairros e taxas são fictícios.",
+              "Informe seu endereço no atendimento para consultar a disponibilidade e a taxa de entrega.",
           },
           {
             id: "personalizar",
@@ -486,7 +490,7 @@ export const brasaBurgerDefaultDocument: HamburgueriaPrototypeDocument =
             id: "prazo",
             question: "Qual o prazo de entrega e retirada?",
             answer:
-              "A estimativa é de 35 a 50 minutos para entrega e de 25 a 35 minutos para retirada. Em uma operação real, os prazos dependem do movimento e seriam confirmados no atendimento.",
+              "Confirme o prazo de preparo e as opções de recebimento com nossa equipe ao fazer seu pedido.",
           },
           {
             id: "reserva",
@@ -498,7 +502,7 @@ export const brasaBurgerDefaultDocument: HamburgueriaPrototypeDocument =
             id: "demonstracao",
             question: "Esta hamburgueria recebe pedidos de verdade?",
             answer:
-              "Esta é uma landing page demonstrativa. Marca, produtos, preços, endereço e avaliações são fictícios. Os botões de pedido demonstram o contato pelo WhatsApp; nenhum pedido é enviado ou cobrado nesta versão.",
+              "Esta é uma prévia com conteúdo de exemplo. Produtos, preços, depoimentos e informações de atendimento precisam ser revisados. Quando configurado, o WhatsApp abre o contato informado; a página não processa pagamentos.",
             demoOnly: true,
           },
         ],
@@ -506,7 +510,7 @@ export const brasaBurgerDefaultDocument: HamburgueriaPrototypeDocument =
       finalCallToAction: {
         eyebrow: "A brasa já está acesa.",
         title: "SÓ FALTA VOCÊ ESCOLHER.",
-        buttonLabel: "Bora de Brasa",
+        buttonLabel: "Pedir pelo WhatsApp",
       },
       footer: {
         navigationHeading: "Explore a casa",
@@ -529,16 +533,16 @@ export const brasaBurgerDefaultDocument: HamburgueriaPrototypeDocument =
         orderDialogTitle: "DEU VONTADE, NÉ?",
         orderDialogMessage:
           "Esta é uma hamburgueria fictícia. Os pratos e preços são ilustrativos, e não recebemos pedidos. Em uma loja real, você falaria com a equipe pelo WhatsApp.",
-        socialDialogTitle: "UMA CASA FICTÍCIA",
+        socialDialogTitle: "PERFIL NÃO CONFIGURADO",
         socialDialogMessage:
-          "A {businessName} é uma marca criada para esta demonstração e ainda não possui um perfil nas redes sociais.",
+          "O perfil nas redes sociais da {businessName} ainda não foi configurado nesta prévia. Continue explorando a página.",
         reviewDisclaimer:
-          "*Avaliações e depoimentos ilustrativos, criados para esta hamburgueria fictícia.",
+          "Os depoimentos identificados como ilustrativos são exemplos do template e devem ser substituídos por relatos reais antes da publicação.",
         locationDisclaimer:
-          "Endereço fictício · o mapa abre a cidade de {city}",
+          "Mapa ilustrativo · confirme o endereço no link de localização",
         contactDisclaimer: "Canal ilustrativo · marca fictícia",
         footerDisclaimer:
-          "Projeto demonstrativo. Dados fictícios e imagens geradas por IA.",
+          "Prévia demonstrativa com conteúdos de exemplo e imagens ilustrativas. Revise as informações antes da publicação.",
       },
       interactions: {
         orderMessage: "Olá, {businessName}! Gostaria de fazer um pedido.",

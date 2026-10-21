@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "../../../server/auth/current-user.service";
-import { logoutAction } from "../../actions/auth";
 import { SummaryCard } from "../../../components/dashboard/summary-card";
 import { Search } from "lucide-react";
 import { FunnelCard } from "../../../components/dashboard/funnel-card";
