@@ -19,8 +19,10 @@ import { LeadApproach } from "@/src/components/leads/lead-approach";
 import { LeadInteractions } from "@/src/components/leads/lead-interaction";
 import { leadInteractionService } from "@/src/server/lead-interactions/lead-interaction.service";
 import { prototypeService } from "@/src/server/prototypes/prototype.service";
+import { LeadPrototypes } from "@/src/components/prototypes/lead-prototypes";
 
 interface LeadDetailPageProps {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
   params: Promise<{
     id: string;
   }>;
@@ -28,7 +30,7 @@ interface LeadDetailPageProps {
 
 const leadService = new LeadService();
 
-export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
+export default async function LeadDetailPage({ params, searchParams }: LeadDetailPageProps) {
   const user = await getCurrentUser();
 
   if (!user) {
@@ -43,6 +45,9 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
     notFound();
   }
   const { prototypes } = await prototypeService.leadCreationOptions(lead.id, user.id);
+  const query = await searchParams ?? {};
+  const selectedPrototypeId = prototypes.find(prototype => prototype.id === query.prototype)?.id;
+  const initialTab = query.tab === "prototypes" || selectedPrototypeId ? "prototypes" : "analysis";
 
   const preliminaryScoreService = new PreliminaryScoreService();
   const approachTemplates = await approachTemplateService.findByCategory(
@@ -159,6 +164,9 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
 
         {/* Conteúdo principal */}
         <LeadTabs
+          key={`${initialTab}:${selectedPrototypeId ?? ""}`}
+          initialTab={initialTab}
+          prototypes={<LeadPrototypes leadId={lead.id} prototypes={prototypes} selectedPrototypeId={selectedPrototypeId} />}
           analysis={
             <LeadAnalysis
               score={lead.score}

@@ -123,8 +123,11 @@ function memory() {
         if (!row) throw new Error("Missing row");
         return structuredClone(row);
       },
-      findMany: async ({ where }: { where: Where }) =>
-        structuredClone(rows.filter((row) => match(row, where))),
+      findMany: async ({ where, select }: { where: Where; select?: Record<string, unknown> }) =>
+        structuredClone(rows.filter((row) => match(row, where)).map(row => ({
+          ...row,
+          ...(select?._count ? { _count: { versions: versions.filter(version => version.prototypeId === row.id).length } } : {}),
+        }))),
       count: async ({ where }: { where: Where }) =>
         rows.filter((row) => match(row, where)).length,
       deleteMany: async ({ where }: { where: Where }) => {
@@ -156,6 +159,11 @@ function memory() {
       },
     },
     prototypeVersion: {
+      deleteMany: async ({ where }: { where: { id: string; prototypeId: string; prototype: { userId: string } } }) => {
+        const selected = versions.filter(version => version.id === where.id && version.prototypeId === where.prototypeId && rows.some(row => row.id === version.prototypeId && row.userId === where.prototype.userId));
+        versions = versions.filter(version => !selected.some(item => item.id === version.id));
+        return { count: selected.length };
+      },
       create: async ({
         data,
       }: {
@@ -283,6 +291,112 @@ test("creates, saves, lists and retrieves validated documents with schema and te
     input.business.name,
     brasaBurgerDefaultDocument.business.name,
   );
+});
+
+test("prototype summaries expose the exact number of historical versions, separate from draft revisions", async () => {
+  const { service } = memory();
+  const prototype = await service.create({ name: "Resumo", document: document() }, alice);
+  await service.createVersion({ id: prototype.id, expectedRevision: 0 }, alice);
+  await service.createVersion({ id: prototype.id, expectedRevision: 0 }, alice);
+
+  const listed = await service.list(alice);
+
+  assert.equal(listed[0].draftRevision, 0);
+  assert.equal(listed[0].versionCount, 2);
+});
+
+test("restore requires confirmation, preserves the snapshot and replaces only the owned draft with a new revision", async () => {
+  const f = memory();
+  const prototype = await f.service.create({ name: "Nome interno atual", document: document() }, alice);
+  const snapshot = await f.service.createVersion({ id: prototype.id, expectedRevision: 0 }, alice);
+  const changed = document(); changed.business.name = "Rascunho posterior";
+  await f.service.updateDraft({ id: prototype.id, expectedRevision: 0, name: prototype.name, document: changed }, alice);
+  const input = { id: prototype.id, versionId: snapshot.id, expectedRevision: 1, confirmed: true };
+  await assert.rejects(f.service.restoreVersion({ ...input, confirmed: false }, alice), z.ZodError);
+  assert.equal((await f.service.findById(prototype.id, alice)).draftDocument.business.name, changed.business.name);
+  const restored = await f.service.restoreVersion(input, alice);
+  assert.equal(restored.draftRevision, 2);
+  assert.equal(restored.name, prototype.name);
+  assert.deepEqual(restored.draftDocument, snapshot.document);
+  assert.deepEqual(await f.service.findVersion(prototype.id, snapshot.id, alice), snapshot);
+  assert.equal((await f.service.listVersions(prototype.id, alice)).length, 1);
+  await assert.rejects(f.service.restoreVersion(input, alice), { code: "CONFLICT" });
+});
+
+test("restore and deletion reject foreign users, wrong prototype associations and missing versions", async () => {
+  const f = memory();
+  const a = await f.service.create({ name: "A", document: document() }, alice);
+  const b = await f.service.create({ name: "B", document: document() }, alice);
+  const version = await f.service.createVersion({ id: a.id, expectedRevision: 0 }, alice);
+  for (const [id, versionId, user] of [[a.id, version.id, bob], [b.id, version.id, alice], [a.id, randomUUID(), alice]]) {
+    await assert.rejects(f.service.restoreVersion({ id, versionId, expectedRevision: 0, confirmed: true }, user), { code: "NOT_FOUND" });
+    await assert.rejects(f.service.deleteVersion({ id, versionId, confirmed: true }, user), { code: "NOT_FOUND" });
+  }
+  assert.equal((await f.service.findById(a.id, alice)).draftRevision, 0);
+  assert.equal((await f.service.listVersions(a.id, alice)).length, 1);
+});
+
+test("deleting a selected version preserves the draft, other snapshots, sequence and registered images", async () => {
+  const f = memory();
+  const prototype = await f.service.create({ name: "Histórico", document: document() }, alice);
+  const imageId = randomUUID();
+  f.assets.push({ id: imageId, userId: alice, prototypeId: prototype.id, width: 100, height: 100, deletionRequestedAt: null, deletedAt: null });
+  const draft = document(); draft.content.hero.image = { source: "upload", assetId: imageId, alt: "Foto", framing: { zoom: 2, positionX: 20, positionY: 80 } };
+  await f.service.updateDraft({ id: prototype.id, expectedRevision: 0, name: prototype.name, document: draft }, alice);
+  const first = await f.service.createVersion({ id: prototype.id, expectedRevision: 1 }, alice);
+  const second = await f.service.createVersion({ id: prototype.id, expectedRevision: 1 }, alice);
+  const before = await f.service.findById(prototype.id, alice), assets = structuredClone(f.assets);
+  await assert.rejects(f.service.deleteVersion({ id: prototype.id, versionId: first.id }, alice), z.ZodError);
+  await f.service.deleteVersion({ id: prototype.id, versionId: first.id, confirmed: true }, alice);
+  assert.deepEqual(await f.service.findById(prototype.id, alice), before);
+  assert.deepEqual(await f.service.listVersions(prototype.id, alice), [{ id: second.id, prototypeId: prototype.id, number: 2, createdAt: second.createdAt }]);
+  assert.deepEqual(f.assets, assets);
+  assert.deepEqual(await f.service.findVersion(prototype.id, second.id, alice), second);
+  assert.equal((await f.service.createVersion({ id: prototype.id, expectedRevision: 1 }, alice)).number, 3);
+});
+
+test("restoration validates permanent images and keeps per-version framing independent", async () => {
+  const f = memory();
+  const prototype = await f.service.create({ name: "Recortes", document: document() }, alice);
+  const image = { id: randomUUID(), userId: alice, prototypeId: prototype.id, width: 100, height: 100, deletionRequestedAt: null as Date | null, deletedAt: null };
+  f.assets.push(image);
+  const draft = document(); draft.content.hero.image = { source: "upload", assetId: image.id, alt: "Foto", framing: { zoom: 1.5, positionX: 20, positionY: 70 } };
+  await f.service.updateDraft({ id: prototype.id, expectedRevision: 0, name: prototype.name, document: draft }, alice);
+  const snapshot = await f.service.createVersion({ id: prototype.id, expectedRevision: 1 }, alice);
+  await f.service.updateDraft({ id: prototype.id, expectedRevision: 1, name: prototype.name, document: document() }, alice);
+  const input = { id: prototype.id, versionId: snapshot.id, expectedRevision: 2, confirmed: true };
+  image.deletionRequestedAt = new Date();
+  await assert.rejects(f.service.restoreVersion(input, alice), z.ZodError);
+  assert.equal((await f.service.findById(prototype.id, alice)).draftRevision, 2);
+  image.deletionRequestedAt = null;
+  const restored = await f.service.restoreVersion(input, alice);
+  assert.deepEqual(restored.draftDocument.content.hero.image, snapshot.document.content.hero.image);
+});
+
+test("simultaneous restores cannot overwrite a draft twice with the same revision", async () => {
+  const f = memory();
+  const prototype = await f.service.create({ name: "Concorrência", document: document() }, alice);
+  const version = await f.service.createVersion({ id: prototype.id, expectedRevision: 0 }, alice);
+  const input = { id: prototype.id, versionId: version.id, expectedRevision: 0, confirmed: true };
+  const results = await Promise.allSettled([f.service.restoreVersion(input, alice), f.service.restoreVersion(input, alice)]);
+  assert.equal(results.filter(result => result.status === "fulfilled").length, 1);
+  assert.equal((await f.service.findById(prototype.id, alice)).draftRevision, 1);
+  assert.equal((await f.service.listVersions(prototype.id, alice)).length, 1);
+});
+
+test("histories stay grouped across prototypes and lead ownership is rechecked before mutation", async () => {
+  const f = memory();
+  const leadA = { id: randomUUID(), userId: alice }, leadB = { id: randomUUID(), userId: alice };
+  f.leads.push(leadA, leadB);
+  const a = await f.service.create({ name: "Lead A", document: document(), leadId: leadA.id }, alice);
+  const b = await f.service.create({ name: "Lead B", document: document(), leadId: leadB.id }, alice);
+  const va = await f.service.createVersion({ id: a.id, expectedRevision: 0 }, alice);
+  await f.service.createVersion({ id: b.id, expectedRevision: 0 }, alice);
+  assert.deepEqual((await f.service.leadCreationOptions(leadA.id, alice)).prototypes.map(row => row.id), [a.id]);
+  assert.deepEqual((await f.service.listVersions(a.id, alice)).map(row => row.id), [va.id]);
+  leadA.userId = bob;
+  await assert.rejects(f.service.restoreVersion({ id: a.id, versionId: va.id, expectedRevision: 0, confirmed: true }, alice), { code: "NOT_FOUND" });
+  await assert.rejects(f.service.deleteVersion({ id: a.id, versionId: va.id, confirmed: true }, alice), { code: "NOT_FOUND" });
 });
 
 test("draft save and reopen preserve all chosen colors and keep version palettes immutable", async () => {

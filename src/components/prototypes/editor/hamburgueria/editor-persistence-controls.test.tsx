@@ -59,11 +59,26 @@ test("persistence controls expose internal name, revision, save and private vers
     "Revisão 4",
     "Salvar rascunho",
     "Criar versão",
-    'href="/prototipos/private-id/versoes"',
+    'href="/prototipos?prototype=private-id#prototipo-private-id"',
   ])
     assert.ok(html.includes(text), text);
   assert.doesNotMatch(button(html, "Criar versão"), /\sdisabled=""/);
 });
+
+test("save and version actions explain their distinct effects without changing their callbacks", () => {
+  const html = render(state({ dirty: true }));
+  assert.ok(
+    button(html, "Salvar rascunho").includes(
+      'title="Atualiza apenas o rascunho. As versões históricas permanecem inalteradas."',
+    ),
+  );
+  assert.ok(
+    button(html, "Criar versão").includes(
+      'title="Registra um novo snapshot do rascunho no histórico."',
+    ),
+  );
+});
+
 test("saving, success and errors are visible and temporary images can be persisted explicitly", () => {
   for (const kind of ["saving", "saved", "error"] as const)
     assert.ok(

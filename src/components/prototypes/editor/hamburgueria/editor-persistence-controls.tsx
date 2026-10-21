@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import type { MouseEventHandler, RefObject } from "react";
+import { prototypeHistoryHref } from "../../prototype-navigation";
 import {
   ArrowLeft,
   Check,
@@ -16,9 +18,13 @@ import type { usePrototypePersistence } from "./use-prototype-persistence";
 export function EditorPersistenceControls({
   id,
   persistence,
+  leadId = null,
+  onNavigate,
 }: {
   id: string;
   persistence: ReturnType<typeof usePrototypePersistence>;
+  leadId?: string | null;
+  onNavigate?: MouseEventHandler<HTMLAnchorElement>;
 }) {
   const { status, busy, dirty, name, setName, revision } = persistence;
   const error = status.kind === "error" || status.kind === "conflict";
@@ -70,6 +76,7 @@ export function EditorPersistenceControls({
         {status.versionId && (
           <Link
             href={`/prototipos/${id}/versoes/${status.versionId}`}
+            onClick={onNavigate}
             className={`ml-2 rounded-sm text-primary underline underline-offset-2 ${focus}`}
           >
             Visualizar versão
@@ -88,6 +95,7 @@ export function EditorPersistenceControls({
         <div className="flex min-w-0 items-center gap-3 sm:gap-4">
           <Link
             href="/prototipos"
+            onClick={onNavigate}
             aria-label="Meus protótipos"
             title="Meus protótipos"
             className={`inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-2 rounded-lg px-2 text-xs text-secundary hover:bg-sidebar-hover hover:text-foreground ${focus}`}
@@ -129,7 +137,8 @@ export function EditorPersistenceControls({
         >
           {!detailedStatus && statusIndicator}
           <Link
-            href={`/prototipos/${id}/versoes`}
+            href={prototypeHistoryHref({ id, leadId })}
+            onClick={onNavigate}
             aria-label="Ver versões"
             title="Ver versões"
             className={`${button} text-secundary hover:bg-sidebar-hover hover:text-foreground lg:mr-2`}
@@ -141,6 +150,7 @@ export function EditorPersistenceControls({
           <button
             type="button"
             aria-label="Criar versão"
+            title="Registra um novo snapshot do rascunho no histórico."
             className={`${button} border border-sidebar-hover text-foreground enabled:hover:bg-sidebar-hover`}
             disabled={busy}
             onClick={persistence.createVersion}
@@ -163,6 +173,7 @@ export function EditorPersistenceControls({
           <button
             type="button"
             aria-label="Salvar rascunho"
+            title="Atualiza apenas o rascunho. As versões históricas permanecem inalteradas."
             className={`${button} bg-primary font-semibold text-background enabled:hover:bg-primary/90`}
             disabled={busy || !dirty}
             onClick={persistence.save}
@@ -196,4 +207,15 @@ export function EditorPersistenceControls({
       )}
     </section>
   );
+}
+
+export function EditorLeaveConfirmation({ dialogRef, href }: { dialogRef: RefObject<HTMLDialogElement | null>; href: string }) {
+  return <dialog ref={dialogRef} aria-labelledby="leave-editor-title" className="m-auto w-[calc(100%_-_32px)] max-w-md rounded-2xl border border-sidebar-hover bg-card p-6 text-foreground backdrop:bg-black/60">
+    <h2 id="leave-editor-title" className="text-lg font-semibold">Sair sem salvar?</h2>
+    <p className="mt-3 text-sm leading-relaxed text-secundary">Há alterações não salvas neste editor. Ao sair, as alterações locais e as imagens temporárias serão descartadas. Cancele e salve o rascunho para mantê-las.</p>
+    <div className="mt-6 flex flex-wrap justify-end gap-2">
+      <button type="button" onClick={() => dialogRef.current?.close()} className="min-h-10 rounded-lg border border-sidebar-hover px-4 text-sm hover:bg-sidebar-hover focus-visible:outline-2 focus-visible:outline-primary">Cancelar</button>
+      <Link href={href} onClick={() => dialogRef.current?.close()} className="inline-flex min-h-10 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-background hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Sair sem salvar</Link>
+    </div>
+  </dialog>;
 }

@@ -4,14 +4,15 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/src/server/auth/current-user.service";
 import { prototypeService, PrototypeError } from "@/src/server/prototypes/prototype.service";
-import type { PrototypeActionResult, PrototypeDTO, PrototypeVersionDTO } from "@/src/server/prototypes/prototype.dto";
+import type { PrototypeActionResult, PrototypeDTO, PrototypeVersionDTO, PrototypeVersionSummaryDTO } from "@/src/server/prototypes/prototype.dto";
+import { createPrototypeVersionSchema } from "@/src/server/prototypes/prototype.schema";
 
-async function authenticated<T>(operation: (userId: string) => Promise<T>): Promise<PrototypeActionResult<T>> {
+async function authenticated<T>(operation: (userId: string) => Promise<T>, revalidate = true): Promise<PrototypeActionResult<T>> {
   const user = await getCurrentUser();
   if (!user) return { success: false, code: "UNAUTHENTICATED", error: "Sua sessão expirou. Faça login novamente." };
   try {
     const data = await operation(user.id);
-    revalidatePath("/prototipos");
+    if (revalidate) revalidatePath("/prototipos");
     return { success: true, data };
   } catch (cause) {
     if (cause instanceof PrototypeError) return { success: false, code: cause.code, error: cause.message };
@@ -42,7 +43,33 @@ export async function savePrototypeDraftAction(input: unknown): Promise<Prototyp
   return authenticated(userId => prototypeService.updateDraft(input, userId));
 }
 export async function createPrototypeVersionAction(input: unknown): Promise<PrototypeActionResult<PrototypeVersionDTO>> {
-  return authenticated(userId => prototypeService.createVersion(input, userId));
+  return authenticated(async userId => {
+    const data = createPrototypeVersionSchema.parse(input);
+    const prototype = await prototypeService.findById(data.id, userId);
+    const version = await prototypeService.createVersion(data, userId);
+    if (prototype.leadId) revalidatePath(`/leads/${prototype.leadId}`);
+    return version;
+  });
+}
+export async function listPrototypeVersionsAction(id: string): Promise<PrototypeActionResult<PrototypeVersionSummaryDTO[]>> {
+  return authenticated(userId => prototypeService.listVersions(id, userId), false);
+}
+export async function restorePrototypeVersionAction(input: unknown): Promise<PrototypeActionResult<PrototypeDTO>> {
+  return authenticated(async userId => {
+    const prototype = await prototypeService.restoreVersion(input, userId);
+    revalidatePath(`/prototipos/${prototype.id}`);
+    revalidatePath(`/prototipos/${prototype.id}/previa`);
+    if (prototype.leadId) revalidatePath(`/leads/${prototype.leadId}`);
+    return prototype;
+  });
+}
+export async function deletePrototypeVersionAction(input: unknown): Promise<PrototypeActionResult<{ id: string; prototypeId: string; leadId: string | null }>> {
+  return authenticated(async userId => {
+    const deleted = await prototypeService.deleteVersion(input, userId);
+    revalidatePath(`/prototipos/${deleted.prototypeId}/versoes/${deleted.id}`);
+    if (deleted.leadId) revalidatePath(`/leads/${deleted.leadId}`);
+    return deleted;
+  });
 }
 export async function deletePrototypeAction(input: unknown): Promise<PrototypeActionResult<{ id: string; leadId: string | null }>> {
   return authenticated(async userId => {

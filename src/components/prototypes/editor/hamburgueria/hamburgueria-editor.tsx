@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { useEffect, useMemo, useReducer, useRef, useState, type MouseEvent } from "react";
 import { Monitor, RotateCcw, Smartphone } from "lucide-react";
 import {
   createEditorDocument,
@@ -18,7 +18,8 @@ import {
 import { useTemporaryImages } from "./use-temporary-images";
 import type { PrototypeDTO } from "@/src/server/prototypes/prototype.dto";
 import { usePrototypePersistence } from "./use-prototype-persistence";
-import { EditorPersistenceControls } from "./editor-persistence-controls";
+import { EditorPersistenceControls, EditorLeaveConfirmation } from "./editor-persistence-controls";
+import { editorNavigationIntent } from "../../prototype-navigation";
 import Link from "next/link";
 import type { ResolvedUploadImages } from "../../templates/hamburgueria/lib/images";
 
@@ -41,6 +42,8 @@ export function HamburgueriaEditor({
   const [selectedSection, setSelectedSection] =
     useState<EditorPanelSection>("appearance");
   const confirmation = useRef<HTMLDialogElement>(null);
+  const leaveConfirmation = useRef<HTMLDialogElement>(null);
+  const [leaveDestination, setLeaveDestination] = useState("/prototipos");
   const persistence = usePrototypePersistence(
     document,
     initialPrototype,
@@ -58,6 +61,15 @@ export function HamburgueriaEditor({
     () => getPreviewDocument(document),
     [document],
   );
+
+  function navigate(event: MouseEvent<HTMLAnchorElement>) {
+    const intent = editorNavigationIntent(event, dirty, persistence.busy);
+    if (intent === "allow") return;
+    event.preventDefault();
+    if (intent === "blocked") return;
+    setLeaveDestination(event.currentTarget.getAttribute("href") ?? "/prototipos");
+    leaveConfirmation.current?.showModal();
+  }
 
   useEffect(() => {
     if (!dirty) return;
@@ -149,6 +161,8 @@ export function HamburgueriaEditor({
         <EditorPersistenceControls
           id={initialPrototype.id}
           persistence={persistence}
+          leadId={initialPrototype.leadId}
+          onNavigate={navigate}
         />
       ) : (
         <div className="shrink-0 border-b border-sidebar-hover px-5 py-2 text-xs text-secundary">
@@ -181,6 +195,7 @@ export function HamburgueriaEditor({
           uploads={uploads}
         />
       </div>
+      <EditorLeaveConfirmation dialogRef={leaveConfirmation} href={leaveDestination} />
       <dialog
         ref={confirmation}
         aria-labelledby="restore-title"

@@ -41,6 +41,7 @@ const tabs = [
 ] as const;
 
 interface LeadTabsProps {
+  initialTab?: LeadTab;
   analysis: React.ReactNode;
   approach?: React.ReactNode;
   interactions?: React.ReactNode;
@@ -48,12 +49,13 @@ interface LeadTabsProps {
 }
 
 export function LeadTabs({
+  initialTab = "analysis",
   analysis,
   approach,
   interactions,
   prototypes,
 }: LeadTabsProps) {
-  const [activeTab, setActiveTab] = useState<LeadTab>("analysis");
+  const [activeTab, setActiveTab] = useState<LeadTab>(initialTab);
   const id = useId();
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const selectedTab = tabs.find((tab) => tab.id === activeTab)!;
