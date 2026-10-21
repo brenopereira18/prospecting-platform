@@ -5,7 +5,7 @@ import Link from "next/link";
 import { loginAction } from "../../actions/auth";
 import { CandyButton } from "../../../components/ui/candy-button";
 
-export const initialLoginState = {
+const initialLoginState = {
   success: false,
   errors: {},
 };

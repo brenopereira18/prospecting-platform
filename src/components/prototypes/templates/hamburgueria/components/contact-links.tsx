@@ -5,6 +5,7 @@ import { formatCopy, formatPriceCents, getWhatsAppUrl } from "../lib/format";
 import type { HamburgueriaPrototypeDocument } from "../schema/hamburgueria.schema";
 import { useInteractions } from "./interaction-provider";
 import { useHamburgueriaDocument } from "./document-provider";
+import { publicWebUrl } from "../lib/presentation";
 
 type LinkProps = Omit<ComponentProps<"a">, "href" | "onClick">;
 
@@ -48,23 +49,11 @@ export function OrderLink({
 }
 
 export function SocialLink({ children, ...props }: LinkProps) {
-  const { showDemo } = useInteractions();
-  const { contact, demo } = useHamburgueriaDocument();
-  const href = demo.enabled ? "" : contact.instagramUrl;
-  if (!demo.enabled && !href) return null;
+  const { contact } = useHamburgueriaDocument();
+  const href = publicWebUrl(contact.instagramUrl);
+  if (!href) return null;
   return (
-    <a
-      {...props}
-      href={href || "#contact-dialog"}
-      target={href ? "_blank" : undefined}
-      rel={href ? "noopener noreferrer" : undefined}
-      onClick={(event) => {
-        if (!href) {
-          event.preventDefault();
-          showDemo("social");
-        }
-      }}
-    >
+    <a {...props} href={href} target="_blank" rel="noopener noreferrer">
       {children}
     </a>
   );

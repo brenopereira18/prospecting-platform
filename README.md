@@ -1,36 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Prospecta
 
-## Getting Started
+SaaS de prospecção de negócios locais, gerenciamento de leads e criação de
+protótipos de landing pages. Utiliza Next.js 16, React, TypeScript, Tailwind CSS 4,
+Zod, Prisma 7 e PostgreSQL.
 
-First, run the development server:
+## Desenvolvimento local
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
+Utilize uma versão de Node.js compatível com Next.js 16 e o pnpm indicado em
+`package.json`. Configure `.env` com `DATABASE_URL`. A descoberta de negócios
+também utiliza `GOOGLE_PLACES_API_KEY`. Não versione credenciais.
+
+Comandos de preparação e execução:
+
+```sh
+pnpm install
+docker compose up -d postgres
+pnpm exec prisma generate
+pnpm exec prisma migrate deploy
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+O PostgreSQL do Compose fica em `localhost:5432`; a conexão de `DATABASE_URL`
+deve corresponder às configurações de `docker-compose.yml`. As migrations são
+aplicadas pelo comando explícito acima, não pelo servidor de desenvolvimento.
+O fluxo persistido exige uma conta existente e login em `/login`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Fluxos e estrutura
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `/descobrir-negocios` e `/leads`: descoberta e gerenciamento de leads.
+- `/leads/[id]/prototipos/novo`: configuração antes da criação do protótipo.
+- `/prototipos`: gerenciamento de rascunhos, prévias privadas e versões.
+- `/template-editor/hamburgueria` e `/template-preview/hamburgueria`: playgrounds
+  disponíveis somente em desenvolvimento.
+- `src/app`: rotas e Server Actions; `src/server`: serviços e DTOs.
+- `src/components/prototypes`: editor, contratos Zod e template reutilizável.
+- `lib/prisma/client.ts`: cliente Prisma compartilhado.
+- `prisma/migrations`: histórico do banco; `docs`: detalhes dos fluxos.
 
-## Learn More
+O conteúdo do template vem de `data/default-document.ts` e dos documentos
+personalizados. Imagens locais enviadas no editor são temporárias e impedem o
+salvamento até serem substituídas por assets do template. Armazenamento
+permanente e publicação pública ainda não fazem parte do fluxo.
 
-To learn more about Next.js, take a look at the following resources:
+## Verificações
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Os testes ficam junto dos módulos e utilizam `node:test` executado pelo `tsx`:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```sh
+pnpm exec tsx --test $(rg --files src -g '*.test.ts' -g '*.test.tsx')
+pnpm exec tsc --noEmit
+pnpm lint
+pnpm build
+```
 
-## Deploy on Vercel
+Para a integração real, configure `PROTOTYPE_TEST_DATABASE_URL` com um banco
+descartável previamente migrado. Sem essa variável, a suíte PostgreSQL é
+explicitamente ignorada. Consulte [Persistência de protótipos](docs/prototypes-persistence.md)
+para preparação do banco de testes e verificação manual do fluxo.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+As responsabilidades das cores e os limites da verificação de contraste estão
+descritos em [Cores do template](docs/hamburgueria-colors.md).

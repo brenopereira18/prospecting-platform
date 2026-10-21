@@ -24,7 +24,7 @@ export function HamburgueriaContent({
   return (
     <InteractionProvider>
       <a
-        className="skip-link fixed [top:-100px] [left:20px] [z-index:100] [background:var(--yellow)] [padding:12px] [&:focus]:[top:10px]"
+        className="skip-link fixed [top:-100px] [left:20px] [z-index:100] [background:var(--brand)] [color:var(--on-brand)] [padding:12px] [&:focus]:[top:10px]"
         href="#conteudo"
       >
         Pular para o conteúdo

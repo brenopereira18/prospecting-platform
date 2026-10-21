@@ -100,4 +100,43 @@ describe("hamburgueriaPrototypeDocumentSchema", () => {
       false,
     );
   });
+
+  it("allows only HTTP(S) links throughout the document", () => {
+    for (const url of [
+      "javascript:void(0)",
+      "data:text/html,example",
+      "file:///tmp/example",
+      "ftp://example.com",
+    ]) {
+      for (const change of [
+        (doc: ReturnType<typeof cloneDefaultDocument>) => {
+          doc.contact.instagramUrl = url;
+        },
+        (doc: ReturnType<typeof cloneDefaultDocument>) => {
+          doc.contact.mapsUrl = url;
+        },
+        (doc: ReturnType<typeof cloneDefaultDocument>) => {
+          doc.seo.canonicalUrl = url;
+        },
+        (doc: ReturnType<typeof cloneDefaultDocument>) => {
+          doc.content.reviews.entries[0].sourceUrl = url;
+        },
+      ]) {
+        const doc = cloneDefaultDocument();
+        change(doc);
+        assert.equal(
+          hamburgueriaPrototypeDocumentSchema.safeParse(doc).success,
+          false,
+          url,
+        );
+      }
+    }
+    const doc = cloneDefaultDocument();
+    doc.contact.mapsUrl = "https://maps.google.com/?q=Centro";
+    doc.content.reviews.entries[0].sourceUrl = "http://example.com/review";
+    assert.equal(
+      hamburgueriaPrototypeDocumentSchema.safeParse(doc).success,
+      true,
+    );
+  });
 });

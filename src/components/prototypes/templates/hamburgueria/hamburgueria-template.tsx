@@ -4,6 +4,7 @@ import "./hamburgueria.css";
 import type { HamburgueriaPrototypeDocument } from "./schema/hamburgueria.schema";
 import { HamburgueriaDocumentProvider } from "./components/document-provider";
 import type { ResolvedUploadImages } from "./lib/images";
+import { getHamburgueriaColorStyles } from "./lib/colors";
 
 const bodyFont = Barlow({
   subsets: ["latin"],
@@ -45,9 +46,7 @@ export function HamburgueriaTemplate({
     caveat: "var(--font-hamburgueria-hand), cursive",
   };
   const style = {
-    "--template-primary": colors.primary,
-    "--template-secondary": colors.secondary,
-    "--template-tertiary": colors.tertiary,
+    ...getHamburgueriaColorStyles(colors),
     "--body": fontFamilies[fonts.body],
     "--display": fontFamilies[fonts.display],
     "--hand": fontFamilies[fonts.hand],
