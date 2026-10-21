@@ -47,7 +47,7 @@ export function TemplateImage({
       // Future remote upload domains do not enter the Next image proxy implicitly.
       unoptimized={
         image.source === "upload" &&
-        (resolved.src.startsWith("https:") || resolved.src.startsWith("blob:"))
+        (resolved.src.startsWith("https:") || resolved.src.startsWith("blob:") || resolved.src.startsWith("/api/prototipos/"))
           ? true
           : props.unoptimized
       }

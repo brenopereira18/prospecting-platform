@@ -6,8 +6,8 @@ export function containsTemporaryOrDataUrl(value: string) {
 }
 
 export const persistablePrototypeDocumentSchema = hamburgueriaPrototypeDocumentSchema.superRefine((document, ctx) => {
-  for (const { image, path } of getHamburgueriaImageReferences(document)) if (image?.source === "upload") {
-    ctx.addIssue({ code: "custom", path, message: "Imagens temporárias impedem o salvamento. Substitua-as por imagens do template até o armazenamento permanente estar disponível.", params: { reason: "TEMPORARY_IMAGES" } });
+  for (const { image, path } of getHamburgueriaImageReferences(document)) if (image?.source === "upload" && !z.uuid().safeParse(image.assetId).success) {
+    ctx.addIssue({ code: "custom", path, message: "Envie a imagem temporária antes de persistir o documento.", params: { reason: "TEMPORARY_IMAGES" } });
   }
   // Also reject temporary/data URLs pasted into otherwise valid URL or text fields.
   function visit(value: unknown, path: (string | number)[]) {
@@ -18,3 +18,4 @@ export const persistablePrototypeDocumentSchema = hamburgueriaPrototypeDocumentS
   }
   visit(document, []);
 });
+import { z } from "zod";

@@ -276,7 +276,7 @@ test("picker shows computer selection, limits, persistence warning and current t
   const prepared = await registry.prepare(validFile());
   const document = editorDocumentReducer(createEditorDocument(), { type: "image/upload", target: hero, assetId: prepared.assetId });
   registry.confirm(prepared.assetId);
-  const temporaryImages = { uploads: registry.getSnapshot(), prepare: registry.prepare, confirm: registry.confirm, discard: registry.discard };
+  const temporaryImages = { uploads: registry.getSnapshot(), prepare: registry.prepare, confirm: registry.confirm, discard: registry.discard, getFile: registry.getFile };
   const props = { document, temporaryImages, dispatch: () => {}, errors: {}, onValidate: () => {} };
   const html = renderToStaticMarkup(<EditorImagePicker {...props} target={hero} label="Imagem principal" />);
   for (const text of ["Enviar imagem do computador", 'type="file"', 'accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"', "5 MB", TEMPORARY_IMAGE_NOTICE, `src="${prepared.image.src}"`, "Imagens do template"]) assert.ok(html.includes(text), text);
@@ -285,4 +285,16 @@ test("picker shows computer selection, limits, persistence warning and current t
   assert.ok(panel.includes("Enviar imagem do computador"));
   assert.ok(panel.includes(TEMPORARY_IMAGE_NOTICE));
   registry.clear();
+});
+
+test("persisted private images render directly with session cookies, framing and template photos intact", () => {
+  const document = createEditorDocument();
+  document.content.hero.image = { source: "upload", assetId: "00000000-0000-4000-8000-000000000001", alt: "Foto salva", focalPoint: { x: 20, y: 80 } };
+  const src = "/api/prototipos/00000000-0000-4000-8000-000000000002/assets/00000000-0000-4000-8000-000000000001";
+  const uploads = prepareUploadImages(document, () => ({ src, width: 4, height: 3 }));
+  const html = renderToStaticMarkup(<HamburgueriaDocumentProvider document={document} uploads={uploads}><HamburgueriaContent document={document} /></HamburgueriaDocumentProvider>);
+  const heroHtml = html.match(/id="inicio"[\s\S]*?<\/section>/)![0];
+  assert.ok(heroHtml.includes(`src="${src}"`)); assert.ok(heroHtml.includes("object-position:20% 80%"));
+  assert.ok(!heroHtml.includes("/_next/image?url=%2Fapi")); assert.ok(!heroHtml.includes('data-image-status="unresolved"'));
+  assert.ok(html.includes("BRASA CLÁSSICO"));
 });

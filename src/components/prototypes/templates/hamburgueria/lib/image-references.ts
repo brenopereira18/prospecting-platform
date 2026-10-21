@@ -11,3 +11,12 @@ export function getHamburgueriaImageReferences(document: HamburgueriaPrototypeDo
     ...document.content.menu.products.map((product, index) => ({ path: ["content", "menu", "products", index, "image"], image: product.image })),
   ];
 }
+
+/** Changes only matching IDs; keeps alt/focal point and concurrent edits intact. */
+export function replaceUploadReferences(document: HamburgueriaPrototypeDocument, replacements: Readonly<Record<string, string>>) {
+  const copy = structuredClone(document);
+  for (const { image } of getHamburgueriaImageReferences(copy)) {
+    if (image?.source === "upload" && Object.hasOwn(replacements, image.assetId)) image.assetId = replacements[image.assetId];
+  }
+  return copy;
+}

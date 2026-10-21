@@ -7,9 +7,10 @@ export function serializeEditorDraft(document: HamburgueriaPrototypeDocument, na
 export function hasUnsavedPrototypeChanges(document: HamburgueriaPrototypeDocument, name: string, savedSnapshot: string) {
   return serializeEditorDraft(document, name) !== savedSnapshot;
 }
-export function hasImagesBlockingSave(document: HamburgueriaPrototypeDocument) {
-  return getDocumentUploadIds(document).size > 0;
+export function hasTemporaryImages(document: HamburgueriaPrototypeDocument) {
+  return [...getDocumentUploadIds(document)].some(id => !z.uuid().safeParse(id).success);
 }
 export function editorPersistenceErrors(fields: Record<string, string> = {}) {
   return Object.fromEntries(Object.entries(fields).filter(([path]) => path.startsWith("document.")).map(([path, error]) => [path.slice("document.".length), error]));
 }
+import { z } from "zod";
