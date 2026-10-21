@@ -38,9 +38,10 @@ O fluxo persistido exige uma conta existente e login em `/login`.
 - `prisma/migrations`: histórico do banco; `docs`: detalhes dos fluxos.
 
 O conteúdo do template vem de `data/default-document.ts` e dos documentos
-personalizados. Imagens locais enviadas no editor são temporárias e impedem o
-salvamento até serem substituídas por assets do template. Armazenamento
-permanente e publicação pública ainda não fazem parte do fluxo.
+personalizados. Imagens selecionadas ficam locais até Salvar rascunho ou Criar
+versão; os arquivos utilizados são enviados ao R2 privado e o JSON recebe os
+IDs permanentes. Consulte [Imagens no R2](docs/prototype-assets-r2.md).
+Publicação pública ainda não faz parte do fluxo.
 
 ## Verificações
 

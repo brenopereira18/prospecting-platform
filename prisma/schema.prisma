@@ -8,15 +8,16 @@ datasource db {
 }
 
 model User {
-  id           String      @id @default(uuid())
-  name         String
-  email        String      @unique
-  passwordHash String
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-  sessions     Session[]
-  leads        Lead[]
-  prototypes   Prototype[]
+  id              String           @id @default(uuid())
+  name            String
+  email           String           @unique
+  passwordHash    String
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  sessions        Session[]
+  leads           Lead[]
+  prototypes      Prototype[]
+  prototypeAssets PrototypeAsset[]
 
   @@map("users")
 }
@@ -144,6 +145,7 @@ model Prototype {
   user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   lead            Lead?              @relation(fields: [leadId], references: [id], onDelete: SetNull)
   versions        PrototypeVersion[]
+  assets          PrototypeAsset[]
 
   @@index([userId, updatedAt])
   @@index([leadId])
@@ -160,4 +162,25 @@ model PrototypeVersion {
 
   @@unique([prototypeId, number])
   @@map("prototype_versions")
+}
+
+model PrototypeAsset {
+  id                  String     @id @default(uuid())
+  userId              String
+  prototypeId         String?
+  objectKey           String     @unique
+  originalName        String
+  mimeType            String
+  sizeBytes           Int
+  width               Int
+  height              Int
+  sha256              String
+  createdAt           DateTime   @default(now())
+  deletionRequestedAt DateTime?
+  deletedAt           DateTime?
+  user                User       @relation(fields: [userId], references: [id], onDelete: Restrict)
+  prototype           Prototype? @relation(fields: [prototypeId], references: [id], onDelete: SetNull)
+
+  @@index([userId, prototypeId, createdAt])
+  @@map("prototype_assets")
 }

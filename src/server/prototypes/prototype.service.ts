@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { validateDocumentAssets } from "../prototype-assets/document-assets";
 import { prisma } from "@/lib/prisma/client";
 import { Prisma, type PrismaClient, type Prototype, type PrototypeVersion } from "../../../generated/prisma/client";
 import { persistablePrototypeDocumentSchema } from "../../components/prototypes/schemas/persistable-document.schema";
@@ -87,8 +88,10 @@ export class PrototypeService {
         if (await tx.prototype.count({ where: { leadId: lead.id, userId } }))
           throw new PrototypeError("CONFLICT", "O lead já possui um protótipo. Use o fluxo do lead para criar outro explicitamente.");
       }
-      return dto(await tx.prototype.create({ data: { userId, name: data.name, leadId: data.leadId,
-        templateId: data.document.template.id, templateVersion: data.document.template.version, draftDocument: json(data.document) } }));
+      const row = await tx.prototype.create({ data: { userId, name: data.name, leadId: data.leadId,
+        templateId: data.document.template.id, templateVersion: data.document.template.version, draftDocument: json(data.document) } });
+      await validateDocumentAssets(tx, data.document, row.id, userId);
+      return dto(row);
     });
   }
 
@@ -117,6 +120,7 @@ export class PrototypeService {
         data: { name: data.name, draftDocument: json(data.document), templateId: data.document.template.id,
           templateVersion: data.document.template.version, draftRevision: { increment: 1 } } });
       if (result.count !== 1) return this.failedRevision(tx, data.id, userId);
+      await validateDocumentAssets(tx, data.document, data.id, userId);
       const row = await tx.prototype.findFirstOrThrow({ where: { id: data.id, userId } });
       return dto(row);
     });
@@ -132,6 +136,7 @@ export class PrototypeService {
       if (result.count !== 1) return this.failedRevision(tx, data.id, userId);
       const row = await tx.prototype.findFirstOrThrow({ where: { id: data.id, userId } });
       const document = persistablePrototypeDocumentSchema.parse(row.draftDocument);
+      await validateDocumentAssets(tx, document, row.id, userId);
       return versionDTO(await tx.prototypeVersion.create({ data: { prototypeId: row.id, number: row.versionSequence, document: json(document) } }));
     });
   }
