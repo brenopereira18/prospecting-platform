@@ -15,11 +15,43 @@ test("PostgreSQL: transactions, isolation, concurrent revisions/versions and dat
   try {
     await db.user.createMany({ data: ids.map(id => ({ id, name: "Prototype integration test", email: `prototype-test-${id}@example.invalid`, passwordHash: "test-only" })) });
     const prototype = await service.create({ name: "Integration", document: brasaBurgerDefaultDocument }, ids[0]);
-    const leadCategory = await db.category.create({ data: { name: `prototype-test-${randomUUID()}` } });
+    const leadCategory = await db.category.create({ data: { name: `prototype-test-${randomUUID()}`, prototypeCategoryKey: "hamburgueria" } });
     try {
-      const lead = await db.lead.create({ data: { userId: ids[0], categoryId: leadCategory.id, name: "Test lead", source: "MANUAL" } });
+      const lead = await db.lead.create({ data: { userId: ids[0], categoryId: leadCategory.id, name: "Test lead", source: "MANUAL", rating: 4.3, userRatingCount: 127 } });
       await assert.rejects(service.create({ name: "Wrong lead owner", document: brasaBurgerDefaultDocument, leadId: lead.id }, ids[1]));
-      await service.create({ name: "Owned lead", document: brasaBurgerDefaultDocument, leadId: lead.id }, ids[0]);
+      const initialOptions = await service.leadCreationOptions(lead.id, ids[0]);
+      const input = { name: "Owned lead", leadId: lead.id, templateId: "brasa-burger", expectedPrototypeCount: 0, configuration: initialOptions.configuration };
+      await assert.rejects(service.createFromLead(input, ids[1]), { code: "NOT_FOUND" });
+      const concurrent = await Promise.allSettled([service.createFromLead(input, ids[0]), service.createFromLead(input, ids[0])]);
+      assert.equal(concurrent.filter(result => result.status === "fulfilled").length, 1);
+      const options = await service.leadCreationOptions(lead.id, ids[0]);
+      assert.equal(options.prototypes.length, 1);
+      assert.equal((await service.findById(options.prototypes[0].id, ids[0])).draftDocument.business.name, lead.name);
+      const configuration = structuredClone(options.configuration);
+      configuration.businessName = "Configured business";
+      configuration.description = "Description supplied in the form.";
+      configuration.contact.whatsapp = "11999998888";
+      const configured = await service.createFromLead({ ...input, configuration, expectedPrototypeCount: 1, createAnother: true }, ids[0]);
+      const reloaded = await service.findById(configured.id, ids[0]);
+      assert.equal(reloaded.draftDocument.business.name, "Configured business");
+      assert.equal(reloaded.draftDocument.contact.whatsapp, "5511999998888");
+      assert.equal(reloaded.draftDocument.content.location.description, configuration.description);
+      assert.deepEqual(reloaded.draftDocument.content.menu, brasaBurgerDefaultDocument.content.menu);
+      assert.deepEqual(reloaded.draftDocument.sections, brasaBurgerDefaultDocument.sections);
+      assert.deepEqual(reloaded.draftDocument.content.reviews, { ...brasaBurgerDefaultDocument.content.reviews, rating: 4.3, count: 127 });
+      assert.deepEqual(reloaded.draftDocument.content.faq, brasaBurgerDefaultDocument.content.faq);
+      assert.equal((await db.lead.findUniqueOrThrow({ where: { id: lead.id } })).name, "Test lead");
+      const snapshot = await service.createVersion({ id: configured.id, expectedRevision: 0 }, ids[0]);
+      await assert.rejects(service.delete({ id: configured.id, expectedRevision: 0 }, ids[1]), { code: "NOT_FOUND" });
+      await service.delete({ id: configured.id, expectedRevision: 0 }, ids[0]);
+      assert.equal(await db.prototypeVersion.count({ where: { id: snapshot.id } }), 0);
+      assert.equal(await db.prototype.count({ where: { id: configured.id } }), 0);
+      assert.equal((await db.lead.findUniqueOrThrow({ where: { id: lead.id } })).name, "Test lead");
+      await db.category.update({ where: { id: leadCategory.id }, data: { name: `renamed-${randomUUID()}` } });
+      assert.equal((await service.leadCreationOptions(lead.id, ids[0])).templates.length, 1);
+      await db.category.update({ where: { id: leadCategory.id }, data: { prototypeCategoryKey: null } });
+      assert.equal((await service.leadCreationOptions(lead.id, ids[0])).templates.length, 0);
+      await assert.rejects(service.createFromLead({ ...input, expectedPrototypeCount: 2, createAnother: true }, ids[0]), { code: "INVALID_INPUT" });
       await db.lead.delete({ where: { id: lead.id } });
     } finally {
       await db.lead.deleteMany({ where: { categoryId: leadCategory.id, userId: { in: ids } } });

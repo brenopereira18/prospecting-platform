@@ -37,6 +37,7 @@ model Session {
 model Category {
   id                String             @id @default(uuid())
   name              String             @unique
+  prototypeCategoryKey String?
   approachTemplates ApproachTemplate[]
   createdAt         DateTime           @default(now())
   leads             Lead[]

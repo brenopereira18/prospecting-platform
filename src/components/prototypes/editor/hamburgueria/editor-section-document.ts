@@ -85,7 +85,7 @@ function replacePath<T>(root: T, path: string, value: unknown): T {
     if (!node || typeof node !== "object") return node;
     const key = keys[index];
     if (["__proto__", "constructor", "prototype"].includes(key)) return node;
-    if (!Object.hasOwn(node, key) && path !== "business.address.postalCode") return node;
+    if (!Object.hasOwn(node, key) && path !== "business.address.postalCode" && path !== "business.foundedYear") return node;
     const result = Array.isArray(node) ? [...node] : { ...node };
     const record = result as Record<string, unknown>;
     record[key] = index === keys.length - 1 ? value : replace(record[key], index + 1);

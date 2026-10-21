@@ -1,12 +1,14 @@
 import { z } from "zod";
 import { prisma } from "@/lib/prisma/client";
-import type { PrismaClient, Prisma, Prototype, PrototypeVersion } from "../../../generated/prisma/client";
+import { Prisma, type PrismaClient, type Prototype, type PrototypeVersion } from "../../../generated/prisma/client";
 import { persistablePrototypeDocumentSchema } from "../../components/prototypes/schemas/persistable-document.schema";
-import { createPrototypeSchema, updatePrototypeDraftSchema, createPrototypeVersionSchema } from "./prototype.schema";
+import { createPrototypeSchema, createLeadPrototypeSchema, updatePrototypeDraftSchema, createPrototypeVersionSchema, deletePrototypeSchema } from "./prototype.schema";
+import { compatibleTemplates, configurationFromLead } from "./template-registry";
+import type { LeadPrototypeOptionsDTO } from "./prototype.dto";
 import type { PrototypeDTO, PrototypeSummaryDTO, PrototypeVersionDTO, PrototypeVersionSummaryDTO } from "./prototype.dto";
 
 export class PrototypeError extends Error {
-  constructor(public readonly code: "NOT_FOUND" | "CONFLICT", message: string) { super(message); }
+  constructor(public readonly code: "NOT_FOUND" | "CONFLICT" | "INVALID_INPUT", message: string) { super(message); }
 }
 const summarySelect = { id: true, name: true, templateId: true, templateVersion: true, draftRevision: true, leadId: true, createdAt: true, updatedAt: true } satisfies Prisma.PrototypeSelect;
 function summary(row: Pick<Prototype, keyof typeof summarySelect>): PrototypeSummaryDTO {
@@ -27,11 +29,64 @@ function json(document: unknown): Prisma.InputJsonObject { return JSON.parse(JSO
 export class PrototypeService {
   constructor(private readonly db: PrismaClient = prisma) {}
 
+  async delete(input: unknown, userId: string): Promise<{ id: string; leadId: string | null }> {
+    const data = deletePrototypeSchema.parse(input);
+    return this.db.$transaction(async tx => {
+      const row = await tx.prototype.findFirst({ where: { id: data.id, userId }, select: { leadId: true } });
+      if (!row) throw new PrototypeError("NOT_FOUND", "Protótipo não encontrado.");
+      // The existing FK cascades to versions. The source lead remains unchanged.
+      const result = await tx.prototype.deleteMany({ where: { id: data.id, userId, draftRevision: data.expectedRevision } });
+      if (result.count !== 1) return this.failedRevision(tx, data.id, userId);
+      return { id: data.id, leadId: row.leadId };
+    });
+  }
+
+  private async ownedLead(tx: Prisma.TransactionClient, leadId: string, userId: string) {
+    const lead = await tx.lead.findFirst({ where: { id: leadId, userId }, include: { category: true } });
+    if (!lead) throw new PrototypeError("NOT_FOUND", "Lead não encontrado.");
+    return lead;
+  }
+
+  private async lockLead(tx: Prisma.TransactionClient, leadId: string, userId: string) {
+    // Serialize generation for the same owned lead, without changing lead data.
+    await tx.$queryRaw(Prisma.sql`SELECT "id" FROM "leads" WHERE "id" = ${leadId} AND "userId" = ${userId} FOR UPDATE`);
+    return this.ownedLead(tx, leadId, userId);
+  }
+
+  async leadCreationOptions(leadId: string, userId: string): Promise<LeadPrototypeOptionsDTO> {
+    z.uuid().parse(leadId);
+    const lead = await this.ownedLead(this.db, leadId, userId);
+    const prototypes = await this.db.prototype.findMany({ where: { leadId, userId }, select: summarySelect, orderBy: { createdAt: "desc" } });
+    return { lead: { id: lead.id, name: lead.name, categoryName: lead.category.name },
+      configuration: configurationFromLead(lead),
+      templates: compatibleTemplates(lead.category.prototypeCategoryKey).map(({ id, name, description, version }) => ({ id, name, description, version })), prototypes: prototypes.map(summary) };
+  }
+
+  async createFromLead(input: unknown, userId: string): Promise<PrototypeDTO> {
+    const data = createLeadPrototypeSchema.parse(input);
+    return this.db.$transaction(async tx => {
+      const lead = await this.lockLead(tx, data.leadId, userId);
+      const template = compatibleTemplates(lead.category.prototypeCategoryKey).find(item => item.id === data.templateId);
+      if (!template) throw new PrototypeError("INVALID_INPUT", "Não há template compatível com a categoria deste lead.");
+      const count = await tx.prototype.count({ where: { leadId: lead.id, userId } });
+      if (count !== data.expectedPrototypeCount || (count > 0 && !data.createAnother))
+        throw new PrototypeError("CONFLICT", "Este lead já possui protótipos ou a lista foi atualizada. Recarregue a página para abrir um existente ou criar outro explicitamente.");
+      const document = template.createDocument(data.configuration, lead);
+      return dto(await tx.prototype.create({ data: { userId, leadId: lead.id, name: data.name,
+        templateId: template.id, templateVersion: document.template.version, draftDocument: json(document) } }));
+    });
+  }
+
   async create(input: unknown, userId: string): Promise<PrototypeDTO> {
     const data = createPrototypeSchema.parse(input);
     return this.db.$transaction(async tx => {
-      if (data.leadId && !await tx.lead.findFirst({ where: { id: data.leadId, userId }, select: { id: true } }))
-        throw new PrototypeError("NOT_FOUND", "Lead não encontrado.");
+      if (data.leadId) {
+        const lead = await this.lockLead(tx, data.leadId, userId);
+        if (!compatibleTemplates(lead.category.prototypeCategoryKey).some(template => template.id === data.document.template.id))
+          throw new PrototypeError("INVALID_INPUT", "Template incompatível com a categoria do lead.");
+        if (await tx.prototype.count({ where: { leadId: lead.id, userId } }))
+          throw new PrototypeError("CONFLICT", "O lead já possui um protótipo. Use o fluxo do lead para criar outro explicitamente.");
+      }
       return dto(await tx.prototype.create({ data: { userId, name: data.name, leadId: data.leadId,
         templateId: data.document.template.id, templateVersion: data.document.template.version, draftDocument: json(data.document) } }));
     });
@@ -45,8 +100,8 @@ export class PrototypeService {
   }
 
   async list(userId: string): Promise<PrototypeSummaryDTO[]> {
-    const rows = await this.db.prototype.findMany({ where: { userId }, select: summarySelect, orderBy: [{ updatedAt: "desc" }, { id: "asc" }] });
-    return rows.map(summary);
+    const rows = await this.db.prototype.findMany({ where: { userId }, select: { ...summarySelect, draftDocument: true, lead: { select: { name: true, userId: true } } }, orderBy: [{ updatedAt: "desc" }, { id: "asc" }] });
+    return rows.map(row => ({ ...summary(row), businessName: persistablePrototypeDocumentSchema.parse(row.draftDocument).business.name, leadName: row.lead?.userId === userId ? row.lead.name : null }));
   }
 
   private async failedRevision(tx: Prisma.TransactionClient, id: string, userId: string): Promise<never> {

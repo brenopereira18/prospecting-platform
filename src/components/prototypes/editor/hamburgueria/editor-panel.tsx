@@ -112,7 +112,8 @@ function HeaderFields(props: PanelProps) {
   return <div className="space-y-6">
     <h2 className="text-sm font-semibold">Cabeçalho</h2>
     <BrandFields {...props} />
-    <NumberField {...props} path="business.foundedYear" label="Ano exibido em Desde" value={props.document.business.foundedYear} min={1800} max={2200} integer onChange={value => props.dispatch(sectionField("business.foundedYear", value))} />
+    <NumberField {...props} path="business.foundedYear" label="Ano exibido em Desde (opcional)" value={props.document.business.foundedYear} min={1800} max={2200} integer onChange={value => props.dispatch(sectionField("business.foundedYear", value))} />
+    {props.document.business.foundedYear !== undefined && <button type="button" className="text-xs text-secundary underline" onClick={() => props.dispatch(sectionField("business.foundedYear", undefined))}>Ocultar ano de fundação não confirmado</button>}
     <TextField {...props} path="content.header.menuButtonLabel" label="Botão do cabeçalho" value={props.document.content.header.menuButtonLabel} onChange={value => props.dispatch({ type: "headerButton", value })} />
     <p className="text-xs text-secundary">Os links da navegação acompanham as seções habilitadas em Visibilidade.</p>
   </div>;

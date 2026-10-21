@@ -69,7 +69,7 @@ export const prototypeBaseSchema = z.strictObject({
     name: prototypeTextSchema(120),
     tagline: prototypeTextSchema(160),
     brandLines: z.tuple([prototypeTextSchema(40), prototypeTextSchema(40)]),
-    foundedYear: z.number().int().min(1800).max(2200),
+    foundedYear: z.number().int().min(1800).max(2200).optional(),
     address: z.strictObject({
       street: prototypeTextSchema(160),
       neighborhood: prototypeTextSchema(100),
@@ -97,6 +97,7 @@ export const prototypeBaseSchema = z.strictObject({
     }),
   }),
   contact: z.strictObject({
+    phone: phoneSchema.optional(),
     whatsapp: phoneSchema.optional(),
     instagramUrl: optionalUrlSchema.optional(),
     instagramLabel: z.string().trim().max(80).optional(),
