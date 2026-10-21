@@ -18,6 +18,7 @@ import { approachTemplateService } from "@/src/server/approach-templates/approac
 import { LeadApproach } from "@/src/components/leads/lead-approach";
 import { LeadInteractions } from "@/src/components/leads/lead-interaction";
 import { leadInteractionService } from "@/src/server/lead-interactions/lead-interaction.service";
+import { prototypeService } from "@/src/server/prototypes/prototype.service";
 
 interface LeadDetailPageProps {
   params: Promise<{
@@ -41,6 +42,7 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
   if (!lead) {
     notFound();
   }
+  const { prototypes } = await prototypeService.leadCreationOptions(lead.id, user.id);
 
   const preliminaryScoreService = new PreliminaryScoreService();
   const approachTemplates = await approachTemplateService.findByCategory(
@@ -103,21 +105,14 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
                 {LEAD_STATUS_LABELS[lead.status]}
               </span>
               <div className="flex flex-col items-start gap-1.5 xl:items-end">
-                <button
-                  type="button"
-                  disabled
-                  aria-describedby="prototype-availability"
-                  className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-sidebar-hover bg-sidebar-hover/40 px-4 text-sm font-medium text-secundary disabled:cursor-not-allowed"
+                <Link
+                  href={`/leads/${lead.id}/prototipos/novo`}
+                  className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-background hover:opacity-90"
                 >
                   <WandSparkles aria-hidden="true" className="size-4" />
                   Gerar protótipo
-                </button>
-                <span
-                  id="prototype-availability"
-                  className="text-xs text-secundary"
-                >
-                  Disponível em breve
-                </span>
+                </Link>
+                {prototypes.length > 0 && <Link href={`/prototipos/${prototypes[0].id}`} className="text-xs text-primary underline">Abrir protótipo existente ({prototypes.length})</Link>}
               </div>
             </div>
           </div>

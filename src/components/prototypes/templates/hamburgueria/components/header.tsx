@@ -37,7 +37,7 @@ export function Header() {
           <span>
             {business.brandLines[0]}
             {business.brandLines[1].trim() && <><br />{business.brandLines[1]}</>}
-            <small>Desde {business.foundedYear}</small>
+            {business.foundedYear !== undefined && <small>Desde {business.foundedYear}</small>}
           </span>
         </SectionLink>
         <SectionLink

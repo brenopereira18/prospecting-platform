@@ -36,7 +36,7 @@ export function PriceField({ path, cents, onChange, errors, onValidate, label = 
   );
 }
 export function NumberField({ path, label, value, min, max, integer = false, onChange, errors, onValidate }: {
-  path: string; label: string; value: number; min: number; max: number; integer?: boolean;
+  path: string; label: string; value: number | undefined; min: number; max: number; integer?: boolean;
   onChange: (value: number) => void; errors: PanelProps["errors"]; onValidate: () => void;
 }) {
   const [draft, setDraft] = useState<string | null>(null);
@@ -47,7 +47,7 @@ export function NumberField({ path, label, value, min, max, integer = false, onC
   return (
     <Field path={path} label={label} error={error}>
       <input id={fieldId(path)} className={inputClass} type="text" inputMode={integer ? "numeric" : "decimal"}
-        value={draft ?? String(value)} aria-invalid={Boolean(error)} aria-describedby={error ? `${fieldId(path)}-error` : undefined}
+        value={draft ?? (value === undefined ? "" : String(value))} aria-invalid={Boolean(error)} aria-describedby={error ? `${fieldId(path)}-error` : undefined}
         onFocus={() => setRejected(false)} onChange={event => {
           const raw = event.target.value;
           setDraft(raw); setRejected(false);

@@ -9,16 +9,21 @@ import { persistablePrototypeDocumentSchema } from "../../components/prototypes/
 
 const alice = randomUUID(); const bob = randomUUID();
 const document = () => structuredClone(brasaBurgerDefaultDocument);
-type Where = { id?: string; userId?: string; draftRevision?: number };
+type Where = { id?: string; userId?: string; draftRevision?: number; leadId?: string };
 
 /** A transactional test double, not a substitute for PostgreSQL integration tests. */
 function memory() {
   let rows: Prototype[] = []; let versions: PrototypeVersion[] = [];
-  const leads: { id: string; userId: string }[] = [];
+  const leads: { id: string; userId: string; categoryKey?: string | null; name?: string }[] = [];
   const match = (row: Prototype, where: Where) => Object.entries(where).every(([key, value]) => row[key as keyof Prototype] === value);
   let tail = Promise.resolve();
   const db = {
-    lead: { findFirst: async ({ where }: { where: { id: string; userId: string } }) => leads.find(lead => lead.id === where.id && lead.userId === where.userId) ?? null },
+    $queryRaw: async () => [],
+    lead: { findFirst: async ({ where }: { where: { id: string; userId: string } }) => {
+      const lead = leads.find(lead => lead.id === where.id && lead.userId === where.userId);
+      return lead ? { ...lead, name: lead.name ?? "Burger do lead", address: "Rua cadastrada, 20", phone: "11999998888", rating: 4.2, userRatingCount: 50,
+        category: { name: "Nome editável", prototypeCategoryKey: lead.categoryKey === undefined ? "hamburgueria" : lead.categoryKey } } : null;
+    } },
     prototype: {
       create: async ({ data }: { data: Pick<Prototype, "userId" | "name" | "templateId" | "templateVersion" | "draftDocument"> & { leadId?: string } }) => {
         const row: Prototype = { ...structuredClone(data), id: randomUUID(), leadId: data.leadId ?? null, draftRevision: 0, versionSequence: 0, createdAt: new Date(), updatedAt: new Date() };
@@ -27,6 +32,13 @@ function memory() {
       findFirst: async ({ where }: { where: Where }) => structuredClone(rows.find(row => match(row, where)) ?? null),
       findFirstOrThrow: async ({ where }: { where: Where }) => { const row = rows.find(row => match(row, where)); if (!row) throw new Error("Missing row"); return structuredClone(row); },
       findMany: async ({ where }: { where: Where }) => structuredClone(rows.filter(row => match(row, where))),
+      count: async ({ where }: { where: Where }) => rows.filter(row => match(row, where)).length,
+      deleteMany: async ({ where }: { where: Where }) => {
+        const ids = new Set(rows.filter(row => match(row, where)).map(row => row.id));
+        rows = rows.filter(row => !ids.has(row.id));
+        versions = versions.filter(version => !ids.has(version.prototypeId));
+        return { count: ids.size };
+      },
       updateMany: async ({ where, data }: { where: Where; data: Record<string, unknown> }) => {
         const row = rows.find(row => match(row, where)); if (!row) return { count: 0 };
         for (const [key, value] of Object.entries(data)) {
@@ -97,6 +109,37 @@ test("all document image locations reject upload references, including hidden se
 test("ordinary Portuguese date labels are valid copy, not data URLs", () => {
   const doc = document(); doc.content.hero.description[0] = "Data: 20/10, venha conhecer a casa.";
   assert.equal(persistablePrototypeDocumentSchema.safeParse(doc).success, true);
+});
+
+test("lead generation requires configuration and rejects old direct-creation requests without persisting", async () => {
+  const { service, leads } = memory(); const leadId = randomUUID(); leads.push({ id: leadId, userId: alice });
+  await assert.rejects(service.createFromLead({ leadId, name: "Sem formulário", templateId: "brasa-burger", expectedPrototypeCount: 0 }, alice), z.ZodError);
+  assert.deepEqual(await service.list(alice), []);
+});
+
+test("deletion removes the owned draft and its versions while preserving the lead and other prototypes", async () => {
+  const { service, leads } = memory(); const leadId = randomUUID(); leads.push({ id: leadId, userId: alice });
+  const owned = await service.create({ name: "Excluir", leadId, document: document() }, alice);
+  const other = await service.create({ name: "Manter", document: document() }, alice);
+  const version = await service.createVersion({ id: owned.id, expectedRevision: 0 }, alice);
+  assert.deepEqual(await service.delete({ id: owned.id, expectedRevision: 0 }, alice), { id: owned.id, leadId });
+  await assert.rejects(service.findById(owned.id, alice), { code: "NOT_FOUND" });
+  await assert.rejects(service.findVersion(owned.id, version.id, alice), { code: "NOT_FOUND" });
+  assert.equal((await service.findById(other.id, alice)).name, "Manter");
+  assert.equal(leads[0].id, leadId);
+});
+
+test("deletion rejects foreign prototypes, malformed input, missing IDs and stale revisions", async () => {
+  const { service } = memory(); const owned = await service.create({ name: "Privado", document: document() }, alice);
+  await assert.rejects(service.delete({ id: owned.id, expectedRevision: 0 }, bob), { code: "NOT_FOUND" });
+  await assert.rejects(service.delete({ id: randomUUID(), expectedRevision: 0 }, alice), { code: "NOT_FOUND" });
+  await assert.rejects(service.delete({ id: "invalid", expectedRevision: 0 }, alice), z.ZodError);
+  await assert.rejects(service.delete({ id: owned.id, expectedRevision: 0, userId: alice }, bob), z.ZodError);
+  await service.updateDraft({ id: owned.id, expectedRevision: 0, name: "Revisão nova", document: document() }, alice);
+  await assert.rejects(service.delete({ id: owned.id, expectedRevision: 0 }, alice), { code: "CONFLICT" });
+  assert.equal((await service.findById(owned.id, alice)).name, "Revisão nova");
+  const results = await Promise.allSettled([service.delete({ id: owned.id, expectedRevision: 1 }, alice), service.delete({ id: owned.id, expectedRevision: 1 }, alice)]);
+  assert.equal(results.filter(result => result.status === "fulfilled").length, 1);
 });
 
 test("save rejects temporary images and blob/data URLs without changing the stored draft", async () => {
@@ -172,4 +215,90 @@ test("failed version validation rolls the sequence back instead of committing a 
   assert.equal(getRows()[0].versionSequence, 0);
   getRows()[0].draftDocument = document();
   assert.equal((await service.createVersion({ id: owned.id, expectedRevision: 0 }, alice)).number, 1);
+});
+
+test("generates from an owned lead, associates it and personalizes the persisted document", async () => {
+  const { service, leads } = memory(); const leadId = randomUUID();
+  leads.push({ id: leadId, userId: alice, name: "Burger Central" });
+  const options = await service.leadCreationOptions(leadId, alice);
+  assert.equal(options.templates[0].id, "brasa-burger");
+  assert.equal(options.prototypes.length, 0);
+  const result = await service.createFromLead({ leadId, name: "Proposta Central", templateId: "brasa-burger", expectedPrototypeCount: 0, configuration: options.configuration }, alice);
+  assert.equal(result.leadId, leadId);
+  assert.equal(result.draftDocument.business.name, "Burger Central");
+  assert.equal(result.draftDocument.contact.phone, "5511999998888");
+  assert.deepEqual((await service.findById(result.id, alice)).draftDocument, result.draftDocument);
+  assert.equal((await service.leadCreationOptions(leadId, alice)).prototypes[0].id, result.id);
+});
+
+test("lead generation and options reject foreign leads; template compatibility is enforced server-side", async () => {
+  const { service, leads } = memory(); const leadId = randomUUID(); leads.push({ id: leadId, userId: alice });
+  const { configuration } = await service.leadCreationOptions(leadId, alice);
+  const input = { leadId, name: "Proposta", templateId: "brasa-burger", expectedPrototypeCount: 0, configuration };
+  await assert.rejects(service.leadCreationOptions(leadId, bob), { code: "NOT_FOUND" });
+  await assert.rejects(service.createFromLead(input, bob), { code: "NOT_FOUND" });
+  await assert.rejects(service.createFromLead({ ...input, templateId: "outro" }, alice), { code: "INVALID_INPUT" });
+  await assert.rejects(service.createFromLead({ ...input, userId: alice }, bob), z.ZodError);
+  leads[0].categoryKey = null;
+  assert.deepEqual((await service.leadCreationOptions(leadId, alice)).templates, []);
+  await assert.rejects(service.createFromLead(input, alice), { code: "INVALID_INPUT" });
+  await assert.rejects(service.create({ name: "Bypass", leadId, document: document() }, alice), { code: "INVALID_INPUT" });
+  assert.deepEqual(await service.list(alice), []);
+});
+
+test("double clicks serialize, existing prototypes require explicit intent, and repeated requests do not duplicate", async () => {
+  const { service, leads } = memory(); const leadId = randomUUID(); leads.push({ id: leadId, userId: alice });
+  const { configuration } = await service.leadCreationOptions(leadId, alice);
+  const input = { leadId, name: "Proposta", templateId: "brasa-burger", expectedPrototypeCount: 0, configuration };
+  const results = await Promise.allSettled([service.createFromLead(input, alice), service.createFromLead(input, alice)]);
+  assert.equal(results.filter(result => result.status === "fulfilled").length, 1);
+  await assert.rejects(service.createFromLead({ ...input, expectedPrototypeCount: 1 }, alice), { code: "CONFLICT" });
+  await assert.rejects(service.create({ name: "Bypass", leadId, document: document() }, alice), { code: "CONFLICT" });
+  const another = { ...input, expectedPrototypeCount: 1, createAnother: true };
+  await service.createFromLead(another, alice);
+  await assert.rejects(service.createFromLead(another, alice), { code: "CONFLICT" });
+  assert.equal((await service.leadCreationOptions(leadId, alice)).prototypes.length, 2);
+  assert.equal((await service.list(alice)).length, 2);
+});
+
+test("configuration persists submitted changes without modifying the source lead or creating on load", async () => {
+  const { service, leads } = memory(); const leadId = randomUUID();
+  leads.push({ id: leadId, userId: alice, name: "Nome do cadastro" });
+  const options = await service.leadCreationOptions(leadId, alice);
+  assert.equal(options.configuration.businessName, "Nome do cadastro");
+  assert.deepEqual(await service.list(alice), []);
+  const configuration = structuredClone(options.configuration);
+  configuration.businessName = "Nome da página";
+  configuration.tagline = "Slogan informado";
+  configuration.contact.whatsapp = "11988887777";
+  configuration.address.city = "São Paulo";
+  configuration.address.state = "SP";
+  const input = { leadId, name: "Proposta", templateId: "brasa-burger", expectedPrototypeCount: 0, configuration };
+  const created = await service.createFromLead(input, alice);
+  assert.equal(created.draftDocument.business.name, "Nome da página");
+  assert.equal(created.draftDocument.business.tagline, "Slogan informado");
+  assert.equal(created.draftDocument.contact.whatsapp, "5511988887777");
+  assert.equal(created.draftDocument.business.address.city, "São Paulo");
+  assert.deepEqual(created.draftDocument.content.menu, brasaBurgerDefaultDocument.content.menu);
+  assert.deepEqual(created.draftDocument.sections, brasaBurgerDefaultDocument.sections);
+  assert.deepEqual(created.draftDocument.content.reviews, { ...brasaBurgerDefaultDocument.content.reviews, rating: 4.2, count: 50 });
+  assert.equal(leads[0].name, "Nome do cadastro");
+  assert.equal((await service.list(alice))[0].businessName, "Nome da página");
+  const reopened = await service.findById(created.id, alice);
+  assert.equal(reopened.leadId, leadId);
+  assert.deepEqual(reopened.draftDocument, created.draftDocument);
+  await assert.rejects(service.createFromLead({ ...input, createAnother: true }, alice), { code: "CONFLICT" });
+});
+
+test("server validates configuration fields before persisting and rejects forged ownership and ratings", async () => {
+  const { service, leads } = memory(); const leadId = randomUUID(); leads.push({ id: leadId, userId: alice });
+  const { configuration } = await service.leadCreationOptions(leadId, alice);
+  const input = { leadId, name: "Proposta", templateId: "brasa-burger", expectedPrototypeCount: 0, configuration };
+  for (const changes of [
+    { businessName: "" }, { rating: 5 }, { userId: bob },
+    { contact: { ...configuration.contact, whatsapp: "123" } },
+    { contact: { ...configuration.contact, mapsUrl: "javascript:alert(1)" } },
+  ]) await assert.rejects(service.createFromLead({ ...input, configuration: { ...configuration, ...changes } }, alice), z.ZodError);
+  await assert.rejects(service.createFromLead(input, bob), { code: "NOT_FOUND" });
+  assert.deepEqual(await service.list(alice), []);
 });

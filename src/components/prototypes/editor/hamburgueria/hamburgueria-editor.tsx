@@ -65,6 +65,7 @@ export function HamburgueriaEditor({ initialPrototype }: { initialPrototype?: Pr
         </div>
       </header>
       {initialPrototype ? <EditorPersistenceControls id={initialPrototype.id} persistence={persistence} /> : <div className="shrink-0 border-b border-sidebar-hover px-5 py-2 text-xs text-secundary">Playground local · <Link href="/prototipos" className="underline">Abrir meus protótipos e criar um rascunho persistido</Link></div>}
+      {initialPrototype && document.demo.enabled && <p className="shrink-0 border-b border-sidebar-hover px-5 py-2 text-xs text-secundary">Conteúdo demonstrativo: revise produtos, preços, depoimentos, imagens e dados do estabelecimento antes da publicação.</p>}
       <div className="grid min-h-0 flex-1 grid-cols-[340px_minmax(0,1fr)] max-lg:grid-cols-[300px_minmax(0,1fr)] max-md:grid-cols-1 max-md:grid-rows-[minmax(0,40%)_minmax(0,1fr)]">
         <HamburgueriaEditorPanel selectedSection={selectedSection} onSelectSection={setSelectedSection} document={document} dispatch={dispatch} errors={errors} temporaryImages={temporaryImages} onValidate={() => setErrors(validateEditorDocument(document))} />
         <HamburgueriaEditorPreview selectedSection={selectedSection} document={previewDocument} viewport={viewport} uploads={temporaryImages.uploads} />

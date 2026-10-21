@@ -31,6 +31,7 @@ export function ReviewSummaryFields(props: PanelProps) {
 
 export function OrderChannelFields(props: PanelProps & { product?: boolean; allMessages?: boolean }) {
   return <details className="space-y-4"><summary className="cursor-pointer text-sm">Canal de pedidos (compartilhado)</summary>
+    <TextField {...props} path="contact.phone" label="Telefone cadastrado (não confirma WhatsApp)" inputMode="tel" value={props.document.contact.phone ?? ""} onChange={value => props.dispatch({ type: "contact", field: "phone", value })} />
     <p className="text-xs text-secundary">O WhatsApp e as mensagens são compartilhados pelos botões de pedido do Cardápio e de Localização. Com um número válido, os botões abrem a conversa diretamente.</p>
     <TextField {...props} path="contact.whatsapp" label="WhatsApp com DDI e DDD (compartilhado)" inputMode="tel" value={props.document.contact.whatsapp ?? ""} onChange={value => props.dispatch({ type: "contact", field: "whatsapp", value })} />
     {(!props.product || props.allMessages) && <SectionTextFields {...props} fields={[["content.interactions.orderMessage", "Mensagem geral · aceita {businessName}", true]]} />}

@@ -35,6 +35,25 @@ async function render(document: HamburgueriaPrototypeDocument) {
   );
 }
 
+test("lead draft renders configured identity together with the complete demonstrative menu and testimonials", async () => {
+  const { createLeadDocument } = await import("../../../../../server/prototypes/template-registry");
+  const document = createLeadDocument({ name: "Burger Central", address: "Rua registrada, 42", phone: "11999998888", rating: 4.3, userRatingCount: 12 });
+  const html = await render(document);
+  assert.ok(html.includes("Burger Central"));
+  assert.ok(html.includes("Rua registrada, 42"));
+  assert.ok(html.includes('aria-label="4,3 de 5 estrelas"'));
+  assert.ok(html.includes("Mais de 12 boas mordidas"));
+  assert.ok(html.includes("Mais de 12 avaliações"));
+  assert.ok(html.includes(`Desde ${brasaBurgerDefaultDocument.business.foundedYear}`));
+  assert.ok(html.includes("Marina Costa"));
+  assert.ok(html.includes("BRASA CLÁSSICO"));
+  assert.ok(html.includes('href="#cardapio"'));
+  const withYear = editorDocumentReducer(document, { type: "sectionField", path: "business.foundedYear", value: 2020 });
+  assert.equal(withYear.business.foundedYear, 2020);
+  assert.equal(document.business.foundedYear, brasaBurgerDefaultDocument.business.foundedYear);
+  assert.ok((await render(withYear)).includes("Desde 2020"));
+});
+
 test("cleared supporting text stays valid and disappears from the preview without empty text blocks", async () => {
   let document = createEditorDocument();
   document = editorDocumentReducer(document, { type: "hero", field: "eyebrow", value: "   " });
