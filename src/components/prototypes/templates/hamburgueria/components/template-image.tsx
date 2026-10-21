@@ -6,21 +6,21 @@ import type { ImageReference } from "../../../schemas/prototype-base.schema";
 import { resolveHamburgueriaImage } from "../lib/images";
 import { useHamburgueriaUploads } from "./document-provider";
 import { Icon } from "./icons";
+import { getImageFramingStyle } from "../lib/image-framing";
 
 export function TemplateImage({
   image,
   style,
+  imageSlot,
   ...props
-}: Omit<ImageProps, "src" | "alt"> & { image: ImageReference }) {
+}: Omit<ImageProps, "src" | "alt"> & {
+  image: ImageReference;
+  imageSlot?: string;
+}) {
   const uploads = useHamburgueriaUploads();
   const resolved = resolveHamburgueriaImage(image, uploads);
   const [failedSource, setFailedSource] = useState<string | null>(null);
-  const imageStyle = image.focalPoint
-    ? {
-        ...style,
-        objectPosition: `${image.focalPoint.x}% ${image.focalPoint.y}%`,
-      }
-    : style;
+  const imageStyle = { ...style, ...getImageFramingStyle(image) };
   if (!resolved || failedSource === resolved.src) {
     return (
       <div
@@ -32,22 +32,34 @@ export function TemplateImage({
         role="img"
         aria-label={image.alt}
         data-image-status="unresolved"
+        data-image-slot={imageSlot}
       >
         <Icon name="burger" />
       </div>
     );
   }
-  return (
+  const photograph = (
     <Image
       {...props}
-      className={`template-image ${props.className ?? ""}`}
+      className={
+        image.framing
+          ? "block h-full w-full max-w-none"
+          : `template-image ${props.className ?? ""}`
+      }
+      data-image-slot={image.framing ? undefined : imageSlot}
       src={resolved}
       alt={image.alt}
-      style={imageStyle}
+      style={
+        image.framing
+          ? { ...imageStyle, width: "100%", height: "100%" }
+          : imageStyle
+      }
       // Future remote upload domains do not enter the Next image proxy implicitly.
       unoptimized={
         image.source === "upload" &&
-        (resolved.src.startsWith("https:") || resolved.src.startsWith("blob:") || resolved.src.startsWith("/api/prototipos/"))
+        (resolved.src.startsWith("https:") ||
+          resolved.src.startsWith("blob:") ||
+          resolved.src.startsWith("/api/prototipos/"))
           ? true
           : props.unoptimized
       }
@@ -58,5 +70,19 @@ export function TemplateImage({
         setFailedSource(resolved.src);
       }}
     />
+  );
+  if (!image.framing) return photograph;
+  return (
+    <div
+      data-image-slot={imageSlot}
+      className={`template-image overflow-hidden ${props.className ?? ""}`}
+      style={{
+        aspectRatio: `${props.width ?? resolved.width}/${props.height ?? resolved.height}`,
+        ...style,
+        overflow: "hidden",
+      }}
+    >
+      {photograph}
+    </div>
   );
 }

@@ -24,9 +24,17 @@ export const imageFocalPointSchema = z.strictObject({
   y: z.number().min(0).max(100),
 });
 
+export const imageFramingSchema = z.strictObject({
+  zoom: z.number().finite().min(1).max(3),
+  positionX: z.number().finite().min(0).max(100),
+  positionY: z.number().finite().min(0).max(100),
+});
+export type ImageFraming = z.infer<typeof imageFramingSchema>;
+
 const imageReferenceFields = {
   alt: prototypeTextSchema(300),
   focalPoint: imageFocalPointSchema.optional(),
+  framing: imageFramingSchema.optional(),
 };
 
 export const imageReferenceSchema = z.discriminatedUnion("source", [

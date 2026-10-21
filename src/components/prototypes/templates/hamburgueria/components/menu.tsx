@@ -140,11 +140,13 @@ export function Menu() {
                 </span>
               </div>
               <div
+                data-image-viewport={`product:${product.id}`}
                 className={`product-image grid size-28 shrink-0 place-items-center self-center overflow-hidden rounded-md max-[700px]:size-22 max-[360px]:size-20 [&_.template-image]:h-full [&_.template-image]:w-full [&_.template-image]:object-cover [&_svg]:size-10 ${product.image ? "bg-[var(--secondary)]" : "bg-[var(--soft-surface)] text-[var(--soft-accent)]"}`}
               >
                 {product.image ? (
                   <TemplateImage
                     image={product.image}
+                    imageSlot={`product:${product.id}`}
                     width={160}
                     height={160}
                     sizes="(max-width: 360px) 80px, (max-width: 700px) 88px, 112px"

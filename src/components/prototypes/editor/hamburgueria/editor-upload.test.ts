@@ -82,12 +82,22 @@ test("one temporary ID used by hidden sections and SEO uploads once and preserve
   const selected = await f.select();
   const document = selected.document;
   document.content.hero.image.focalPoint = { x: 20, y: 80 };
+  document.content.hero.image.framing = {
+    zoom: 2,
+    positionX: 15,
+    positionY: 60,
+  };
   document.seo.socialImage = structuredClone(document.content.hero.image);
   document.sections.hero = false;
   const before = structuredClone(document);
   const saved = await f.cache.prepare(document, f.registry.getFile);
   assert.equal(f.calls.length, 1);
   assert.equal(saved.document.content.hero.image.source, "upload");
+  assert.deepEqual(saved.document.content.hero.image.framing, {
+    zoom: 2,
+    positionX: 15,
+    positionY: 60,
+  });
   assert.deepEqual(
     saved.document.content.hero.image,
     saved.document.seo.socialImage,

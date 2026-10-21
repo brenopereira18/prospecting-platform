@@ -24,7 +24,15 @@ type Where = {
 
 /** A transactional test double, not a substitute for PostgreSQL integration tests. */
 function memory() {
-  const assets: { id: string; userId: string; prototypeId: string | null; width: number; height: number; deletionRequestedAt: Date | null; deletedAt: Date | null }[] = [];
+  const assets: {
+    id: string;
+    userId: string;
+    prototypeId: string | null;
+    width: number;
+    height: number;
+    deletionRequestedAt: Date | null;
+    deletedAt: Date | null;
+  }[] = [];
   let rows: Prototype[] = [];
   let versions: PrototypeVersion[] = [];
   const leads: {
@@ -40,9 +48,23 @@ function memory() {
   let tail = Promise.resolve();
   const db = {
     prototypeAsset: {
-      findMany: async ({ where }: { where: { id: { in: string[] }; userId: string; prototypeId: string } }) => assets.filter(asset =>
-        where.id.in.includes(asset.id) && asset.userId === where.userId && asset.prototypeId === where.prototypeId && !asset.deletionRequestedAt && !asset.deletedAt &&
-        rows.some(row => row.id === asset.prototypeId && row.userId === where.userId)),
+      findMany: async ({
+        where,
+      }: {
+        where: { id: { in: string[] }; userId: string; prototypeId: string };
+      }) =>
+        assets.filter(
+          (asset) =>
+            where.id.in.includes(asset.id) &&
+            asset.userId === where.userId &&
+            asset.prototypeId === where.prototypeId &&
+            !asset.deletionRequestedAt &&
+            !asset.deletedAt &&
+            rows.some(
+              (row) =>
+                row.id === asset.prototypeId && row.userId === where.userId,
+            ),
+        ),
     },
     $queryRaw: async () => [],
     lead: {
@@ -900,36 +922,185 @@ test("server validates configuration fields before persisting and rejects forged
 });
 
 test("registered images persist, reopen and remain referenced in immutable versions", async () => {
-  const f = memory(); const prototype = await f.service.create({ name: "Fotos", document: document() }, alice);
-  const id = randomUUID(); f.assets.push({ id, userId: alice, prototypeId: prototype.id, width: 4, height: 3, deletionRequestedAt: null, deletedAt: null });
-  const edited = document(); edited.content.hero.image = { source: "upload", assetId: id, alt: "Foto do cliente", focalPoint: { x: 10, y: 70 } };
-  const saved = await f.service.updateDraft({ id: prototype.id, expectedRevision: 0, name: "Fotos", document: edited }, alice);
-  const reopened = await f.service.findById(prototype.id, alice); assert.deepEqual(reopened.draftDocument.content.hero.image, edited.content.hero.image);
-  const version = await f.service.createVersion({ id: prototype.id, expectedRevision: saved.draftRevision }, alice);
-  await f.service.updateDraft({ id: prototype.id, expectedRevision: 1, name: "Fotos", document: document() }, alice);
-  assert.deepEqual((await f.service.findVersion(prototype.id, version.id, alice)).document.content.hero.image, edited.content.hero.image);
+  const f = memory();
+  const prototype = await f.service.create(
+    { name: "Fotos", document: document() },
+    alice,
+  );
+  const id = randomUUID();
+  f.assets.push({
+    id,
+    userId: alice,
+    prototypeId: prototype.id,
+    width: 4,
+    height: 3,
+    deletionRequestedAt: null,
+    deletedAt: null,
+  });
+  const edited = document();
+  edited.content.hero.image = {
+    source: "upload",
+    assetId: id,
+    alt: "Foto do cliente",
+    focalPoint: { x: 10, y: 70 },
+    framing: { zoom: 1.5, positionX: 20, positionY: 80 },
+  };
+  const saved = await f.service.updateDraft(
+    { id: prototype.id, expectedRevision: 0, name: "Fotos", document: edited },
+    alice,
+  );
+  const reopened = await f.service.findById(prototype.id, alice);
+  assert.deepEqual(
+    reopened.draftDocument.content.hero.image,
+    edited.content.hero.image,
+  );
+  const version = await f.service.createVersion(
+    { id: prototype.id, expectedRevision: saved.draftRevision },
+    alice,
+  );
+  const reframed = structuredClone(edited);
+  reframed.content.hero.image.framing = {
+    zoom: 2.5,
+    positionX: 80,
+    positionY: 10,
+  };
+  await f.service.updateDraft(
+    {
+      id: prototype.id,
+      expectedRevision: 1,
+      name: "Fotos",
+      document: reframed,
+    },
+    alice,
+  );
+  const secondVersion = await f.service.createVersion(
+    { id: prototype.id, expectedRevision: 2 },
+    alice,
+  );
+  assert.deepEqual(
+    (await f.service.findVersion(prototype.id, secondVersion.id, alice))
+      .document.content.hero.image.framing,
+    reframed.content.hero.image.framing,
+  );
+  assert.deepEqual(
+    (await f.service.findById(prototype.id, alice)).draftDocument.content.hero
+      .image.framing,
+    reframed.content.hero.image.framing,
+  );
+  assert.deepEqual(
+    (await f.service.findVersion(prototype.id, version.id, alice)).document
+      .content.hero.image,
+    edited.content.hero.image,
+  );
 });
 
 test("saving rejects foreign, cross-prototype, deleted and unknown permanent image IDs without advancing the draft", async () => {
-  const f = memory(); const prototype = await f.service.create({ name: "Privado", document: document() }, alice);
-  const other = await f.service.create({ name: "Outro", document: document() }, alice);
-  for (const changes of [{ userId: bob }, { prototypeId: other.id }, { prototypeId: null }, { deletionRequestedAt: new Date() }, { deletedAt: new Date() }]) {
-    const asset = { id: randomUUID(), userId: alice, prototypeId: prototype.id as string | null, width: 4, height: 3, deletionRequestedAt: null as Date | null, deletedAt: null as Date | null, ...changes };
-    f.assets.push(asset); const edited = document(); edited.sections.hero = false;
-    edited.seo.socialImage = { source: "upload", assetId: asset.id, alt: "Foto" };
-    await assert.rejects(f.service.updateDraft({ id: prototype.id, expectedRevision: 0, name: "Privado", document: edited }, alice), z.ZodError);
-    assert.equal((await f.service.findById(prototype.id, alice)).draftRevision, 0);
+  const f = memory();
+  const prototype = await f.service.create(
+    { name: "Privado", document: document() },
+    alice,
+  );
+  const other = await f.service.create(
+    { name: "Outro", document: document() },
+    alice,
+  );
+  for (const changes of [
+    { userId: bob },
+    { prototypeId: other.id },
+    { prototypeId: null },
+    { deletionRequestedAt: new Date() },
+    { deletedAt: new Date() },
+  ]) {
+    const asset = {
+      id: randomUUID(),
+      userId: alice,
+      prototypeId: prototype.id as string | null,
+      width: 4,
+      height: 3,
+      deletionRequestedAt: null as Date | null,
+      deletedAt: null as Date | null,
+      ...changes,
+    };
+    f.assets.push(asset);
+    const edited = document();
+    edited.sections.hero = false;
+    edited.seo.socialImage = {
+      source: "upload",
+      assetId: asset.id,
+      alt: "Foto",
+    };
+    await assert.rejects(
+      f.service.updateDraft(
+        {
+          id: prototype.id,
+          expectedRevision: 0,
+          name: "Privado",
+          document: edited,
+        },
+        alice,
+      ),
+      z.ZodError,
+    );
+    assert.equal(
+      (await f.service.findById(prototype.id, alice)).draftRevision,
+      0,
+    );
   }
-  const unknown = document(); unknown.content.hero.image = { source: "upload", assetId: randomUUID(), alt: "Desconhecida" };
-  await assert.rejects(f.service.updateDraft({ id: prototype.id, expectedRevision: 0, name: "Privado", document: unknown }, alice), z.ZodError);
+  const unknown = document();
+  unknown.content.hero.image = {
+    source: "upload",
+    assetId: randomUUID(),
+    alt: "Desconhecida",
+  };
+  await assert.rejects(
+    f.service.updateDraft(
+      {
+        id: prototype.id,
+        expectedRevision: 0,
+        name: "Privado",
+        document: unknown,
+      },
+      alice,
+    ),
+    z.ZodError,
+  );
 });
 
 test("version creation validates current asset authorization and rolls back sequence on failure", async () => {
-  const f = memory(); const prototype = await f.service.create({ name: "Versões", document: document() }, alice);
-  const asset = { id: randomUUID(), userId: alice, prototypeId: prototype.id, width: 4, height: 3, deletionRequestedAt: null as Date | null, deletedAt: null };
-  f.assets.push(asset); const edited = document(); edited.content.hero.image = { source: "upload", assetId: asset.id, alt: "Foto" };
-  await f.service.updateDraft({ id: prototype.id, expectedRevision: 0, name: "Versões", document: edited }, alice);
+  const f = memory();
+  const prototype = await f.service.create(
+    { name: "Versões", document: document() },
+    alice,
+  );
+  const asset = {
+    id: randomUUID(),
+    userId: alice,
+    prototypeId: prototype.id,
+    width: 4,
+    height: 3,
+    deletionRequestedAt: null as Date | null,
+    deletedAt: null,
+  };
+  f.assets.push(asset);
+  const edited = document();
+  edited.content.hero.image = {
+    source: "upload",
+    assetId: asset.id,
+    alt: "Foto",
+  };
+  await f.service.updateDraft(
+    {
+      id: prototype.id,
+      expectedRevision: 0,
+      name: "Versões",
+      document: edited,
+    },
+    alice,
+  );
   asset.deletionRequestedAt = new Date();
-  await assert.rejects(f.service.createVersion({ id: prototype.id, expectedRevision: 1 }, alice), z.ZodError);
+  await assert.rejects(
+    f.service.createVersion({ id: prototype.id, expectedRevision: 1 }, alice),
+    z.ZodError,
+  );
   assert.equal(f.getRows()[0].versionSequence, 0);
 });
