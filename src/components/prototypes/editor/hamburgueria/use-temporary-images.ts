@@ -13,6 +13,7 @@ export interface TemporaryImagesController {
   prepare: TemporaryImageRegistry["prepare"];
   confirm: TemporaryImageRegistry["confirm"];
   discard: TemporaryImageRegistry["discard"];
+  getFile: TemporaryImageRegistry["getFile"];
 }
 
 export function useTemporaryImages(document: HamburgueriaPrototypeDocument): TemporaryImagesController {
@@ -22,5 +23,5 @@ export function useTemporaryImages(document: HamburgueriaPrototypeDocument): Tem
   useEffect(() => registry.reconcile(document), [document, registry]);
   // clear is reusable so development Strict Mode can safely replay effect setup/cleanup.
   useEffect(() => () => registry.clear(), [registry]);
-  return useMemo(() => ({ uploads, prepare: registry.prepare, confirm: registry.confirm, discard: registry.discard }), [registry, uploads]);
+  return useMemo(() => ({ uploads, prepare: registry.prepare, confirm: registry.confirm, discard: registry.discard, getFile: registry.getFile }), [registry, uploads]);
 }

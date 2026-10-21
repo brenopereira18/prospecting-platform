@@ -17,17 +17,26 @@ import type { PrototypeDTO } from "@/src/server/prototypes/prototype.dto";
 import { usePrototypePersistence } from "./use-prototype-persistence";
 import { EditorPersistenceControls } from "./editor-persistence-controls";
 import Link from "next/link";
+import type { ResolvedUploadImages } from "../../templates/hamburgueria/lib/images";
 
-export function HamburgueriaEditor({ initialPrototype }: { initialPrototype?: PrototypeDTO } = {}) {
+export function HamburgueriaEditor({ initialPrototype, initialUploads = {} }: { initialPrototype?: PrototypeDTO; initialUploads?: ResolvedUploadImages } = {}) {
   const [document, dispatch] = useReducer(editorDocumentReducer, initialPrototype, initial => initial ? structuredClone(initial.draftDocument) : createEditorDocument());
   const temporaryImages = useTemporaryImages(document);
   const [viewport, setViewport] = useState<EditorViewport>("desktop");
   const [errors, setErrors] = useState<EditorErrors>({});
   const [selectedSection, setSelectedSection] = useState<EditorPanelSection>("appearance");
   const confirmation = useRef<HTMLDialogElement>(null);
-  const persistence = usePrototypePersistence(document, initialPrototype, setErrors);
+  const persistence = usePrototypePersistence(document, initialPrototype, setErrors, temporaryImages, dispatch);
+  const uploads = { ...initialUploads, ...persistence.uploads, ...temporaryImages.uploads };
   const { dirty } = persistence;
   const previewDocument = useMemo(() => getPreviewDocument(document), [document]);
+
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => setErrors(validateEditorDocument(document)), 400);
@@ -58,7 +67,7 @@ export function HamburgueriaEditor({ initialPrototype }: { initialPrototype?: Pr
             <span className={`h-1.5 w-1.5 rounded-full ${dirty ? "bg-amber-300" : "bg-secundary"}`} />
             {persistence.busy ? persistence.status.message : dirty ? "Alterações não salvas" : initialPrototype ? "Salvo" : "Documento padrão"}
           </span>
-          <button type="button" onClick={() => confirmation.current?.showModal()}
+          <button type="button" disabled={persistence.busy} onClick={() => confirmation.current?.showModal()}
             className="flex min-h-9 items-center gap-2 rounded-lg border border-sidebar-hover px-3 text-xs font-medium hover:bg-sidebar-hover focus-visible:outline-2 focus-visible:outline-primary">
             <RotateCcw size={14} aria-hidden="true" />Restaurar padrão
           </button>
@@ -67,8 +76,8 @@ export function HamburgueriaEditor({ initialPrototype }: { initialPrototype?: Pr
       {initialPrototype ? <EditorPersistenceControls id={initialPrototype.id} persistence={persistence} /> : <div className="shrink-0 border-b border-sidebar-hover px-5 py-2 text-xs text-secundary">Playground local · <Link href="/prototipos" className="underline">Abrir meus protótipos e criar um rascunho persistido</Link></div>}
       {initialPrototype && document.demo.enabled && <p className="shrink-0 border-b border-sidebar-hover px-5 py-2 text-xs text-secundary">Conteúdo demonstrativo: revise produtos, preços, depoimentos, imagens e dados do estabelecimento antes da publicação.</p>}
       <div className="grid min-h-0 flex-1 grid-cols-[340px_minmax(0,1fr)] max-lg:grid-cols-[300px_minmax(0,1fr)] max-md:grid-cols-1 max-md:grid-rows-[minmax(0,40%)_minmax(0,1fr)]">
-        <HamburgueriaEditorPanel selectedSection={selectedSection} onSelectSection={setSelectedSection} document={document} dispatch={dispatch} errors={errors} temporaryImages={temporaryImages} onValidate={() => setErrors(validateEditorDocument(document))} />
-        <HamburgueriaEditorPreview selectedSection={selectedSection} document={previewDocument} viewport={viewport} uploads={temporaryImages.uploads} />
+        <HamburgueriaEditorPanel selectedSection={selectedSection} onSelectSection={setSelectedSection} document={document} dispatch={dispatch} errors={errors} temporaryImages={{ ...temporaryImages, uploads }} onValidate={() => setErrors(validateEditorDocument(document))} />
+        <HamburgueriaEditorPreview selectedSection={selectedSection} document={previewDocument} viewport={viewport} uploads={uploads} />
       </div>
       <dialog ref={confirmation} aria-labelledby="restore-title"
         className="m-auto w-[calc(100%_-_32px)] max-w-md rounded-2xl border border-sidebar-hover bg-card p-6 text-foreground backdrop:bg-black/60">

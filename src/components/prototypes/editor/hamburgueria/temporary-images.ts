@@ -69,13 +69,17 @@ const browserDependencies: TemporaryImageDependencies = {
 
 /** Owns resources, not document content. Pending previews survive until confirmed or cancelled. */
 export class TemporaryImageRegistry {
-  private entries = new Map<string, { src: string; image?: TemporaryImage; pending: boolean }>();
+  private entries = new Map<string, { src: string; image?: TemporaryImage; pending: boolean; file: File }>();
   private listeners = new Set<() => void>();
   private snapshot: ResolvedUploadImages = {};
 
   constructor(private dependencies: TemporaryImageDependencies = browserDependencies) {}
 
   getSnapshot = () => this.snapshot;
+  getFile = (assetId: string): File | undefined => {
+    const entry = this.entries.get(assetId);
+    return entry && !entry.pending ? entry.file : undefined;
+  };
   subscribe = (listener: () => void) => {
     this.listeners.add(listener);
     return () => { this.listeners.delete(listener); };
@@ -99,7 +103,7 @@ export class TemporaryImageRegistry {
     if (signal?.aborted) throw new DOMException("Seleção cancelada.", "AbortError");
     const assetId = this.dependencies.createId();
     const src = this.dependencies.createURL(file);
-    const entry = { src, pending: true, image: undefined as TemporaryImage | undefined };
+    const entry = { src, pending: true, image: undefined as TemporaryImage | undefined, file };
     this.entries.set(assetId, entry);
     const cancel = () => this.discard(assetId);
     signal?.addEventListener("abort", cancel, { once: true });

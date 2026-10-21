@@ -1,4 +1,5 @@
 import { hexColorSchema } from "../../schemas/prototype-base.schema";
+import { replaceUploadReferences } from "../../templates/hamburgueria/lib/image-references";
 import {
   reduceEditorMenu,
   type EditorMenuAction,
@@ -29,6 +30,7 @@ export type HeroTextField = "eyebrow" | "primaryCtaLabel" | "secondaryCtaLabel";
 export type EditorErrors = Record<string, string>;
 
 export type EditorDocumentAction =
+  | { type: "images/persisted"; replacements: Record<string, string> }
   | EditorMenuAction
   | EditorSectionAction
   | EditorImageAction
@@ -53,6 +55,8 @@ function reduceDocument(
   action: EditorDocumentAction,
 ): HamburgueriaPrototypeDocument {
   switch (action.type) {
+    case "images/persisted":
+      return replaceUploadReferences(document, action.replacements);
     case "confirmFacts":
       return confirmFields(document, action.fields);
     case "color":

@@ -21,7 +21,7 @@ async function authenticated<T>(operation: (userId: string) => Promise<T>): Prom
       }
       const temporary = cause.issues.some(issue => issue.code === "custom" && issue.params?.reason === "TEMPORARY_IMAGES");
       return { success: false, code: temporary ? "TEMPORARY_IMAGES" : "INVALID_INPUT",
-        error: temporary ? "Substitua as imagens temporárias por imagens do template antes de salvar." : "Dados inválidos. Revise os campos indicados.",
+        error: temporary ? "Não foi possível confirmar o envio de todas as imagens. Tente salvar novamente pelo editor." : "Dados inválidos. Revise os campos indicados.",
         fieldErrors: Object.fromEntries(cause.issues.map(issue => [issue.path.join("."), issue.message])) };
     }
     console.error("Falha na persistência de protótipos:", cause);
