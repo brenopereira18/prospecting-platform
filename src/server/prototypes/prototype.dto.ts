@@ -7,6 +7,8 @@ export interface PrototypeSummaryDTO {
   versionCount?: number;
   leadName?: string | null;
   businessName?: string;
+  categoryName?: string | null;
+  latestVersion?: PrototypeVersionSummaryDTO | null;
 }
 export interface PrototypeDTO extends PrototypeSummaryDTO { draftDocument: HamburgueriaPrototypeDocument }
 export interface LeadPrototypeOptionsDTO {
@@ -15,7 +17,7 @@ export interface LeadPrototypeOptionsDTO {
   configuration: PrototypeConfiguration;
   prototypes: PrototypeSummaryDTO[];
 }
-export interface PrototypeVersionSummaryDTO { id: string; prototypeId: string; number: number; createdAt: string }
+export interface PrototypeVersionSummaryDTO { id: string; prototypeId: string; number: number; createdAt: string; thumbnailReady?: boolean }
 export interface PrototypeVersionDTO extends PrototypeVersionSummaryDTO { document: HamburgueriaPrototypeDocument }
 export type PrototypeErrorCode = "UNAUTHENTICATED" | "NOT_FOUND" | "CONFLICT" | "INVALID_INPUT" | "TEMPORARY_IMAGES" | "UNEXPECTED";
 export type PrototypeActionResult<T> = { success: true; data: T } | { success: false; code: PrototypeErrorCode; error: string; fieldErrors?: Record<string, string> };

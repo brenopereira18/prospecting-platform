@@ -123,11 +123,19 @@ function memory() {
         if (!row) throw new Error("Missing row");
         return structuredClone(row);
       },
-      findMany: async ({ where, select }: { where: Where; select?: Record<string, unknown> }) =>
-        structuredClone(rows.filter((row) => match(row, where)).map(row => ({
+      findMany: async ({ where, select, orderBy }: { where: Where; select?: Record<string, unknown>; orderBy?: { createdAt?: string; id?: string }[] }) =>
+        structuredClone(rows.filter((row) => match(row, where)).toSorted((a, b) => {
+          if (!Array.isArray(orderBy) || orderBy[0]?.createdAt !== "desc") return 0;
+          return b.createdAt.getTime() - a.createdAt.getTime() || a.id.localeCompare(b.id);
+        }).map(row => {
+          const lead = leads.find(lead => lead.id === row.leadId);
+          return {
           ...row,
           ...(select?._count ? { _count: { versions: versions.filter(version => version.prototypeId === row.id).length } } : {}),
-        }))),
+          ...(select?.versions ? { versions: versions.filter(version => version.prototypeId === row.id).toSorted((a, b) => b.number - a.number).slice(0, 1) } : {}),
+          ...(select?.lead ? { lead: lead ? { name: lead.name ?? "Burger do lead", userId: lead.userId, category: { name: "Nome editável" } } : null } : {}),
+          };
+        })),
       count: async ({ where }: { where: Where }) =>
         rows.filter((row) => match(row, where)).length,
       deleteMany: async ({ where }: { where: Where }) => {
@@ -303,6 +311,43 @@ test("prototype summaries expose the exact number of historical versions, separa
 
   assert.equal(listed[0].draftRevision, 0);
   assert.equal(listed[0].versionCount, 2);
+  assert.equal(listed[0].latestVersion?.number, 2);
+  assert.equal(listed[0].latestVersion?.prototypeId, prototype.id);
+});
+
+test("listing orders by prototype creation with stable ties and ignores later draft edits and foreign users", async () => {
+  const f = memory();
+  const first = await f.service.create({ name: "Primeiro", document: document() }, alice);
+  const second = await f.service.create({ name: "Segundo", document: document() }, alice);
+  await f.service.create({ name: "Outro usuário", document: document() }, bob);
+  const rows = f.getRows();
+  rows.find(row => row.id === first.id)!.createdAt = new Date("2026-10-01T10:00:00Z");
+  rows.find(row => row.id === second.id)!.createdAt = new Date("2026-10-02T10:00:00Z");
+  rows.find(row => row.id === first.id)!.updatedAt = new Date("2026-10-30T10:00:00Z");
+  const snapshot = await f.service.createVersion({ id: first.id, expectedRevision: 0 }, alice);
+  let listed = await f.service.list(alice);
+  assert.deepEqual(listed.map(row => row.id), [second.id, first.id]);
+  assert.equal(listed[0].latestVersion, null);
+  assert.equal(listed[1].latestVersion?.createdAt, snapshot.createdAt);
+  await f.service.deleteVersion({ id: first.id, versionId: snapshot.id, confirmed: true }, alice);
+  assert.equal((await f.service.list(alice))[1].latestVersion, null);
+  rows.find(row => row.id === first.id)!.createdAt = rows.find(row => row.id === second.id)!.createdAt;
+  listed = await f.service.list(alice);
+  assert.deepEqual(listed.map(row => row.id), [first.id, second.id].sort());
+});
+
+test("listing returns the owned establishment category and never exposes a foreign associated lead", async () => {
+  const f = memory();
+  const lead = { id: randomUUID(), userId: alice, name: "Estabelecimento associado" };
+  f.leads.push(lead);
+  await f.service.create({ name: "Proposta", document: document(), leadId: lead.id }, alice);
+  const [listed] = await f.service.list(alice);
+  assert.equal(listed.leadName, lead.name);
+  assert.equal(listed.categoryName, "Nome editável");
+  lead.userId = bob;
+  const [guarded] = await f.service.list(alice);
+  assert.equal(guarded.leadName, null);
+  assert.equal(guarded.categoryName, null);
 });
 
 test("restore requires confirmation, preserves the snapshot and replaces only the owned draft with a new revision", async () => {
