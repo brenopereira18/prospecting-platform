@@ -31,3 +31,9 @@ export interface LeadFiltersDTO {
   categoryId?: string;
   status?: LeadStatus;
 }
+
+export interface LeadCommercialFunnelDTO {
+  total: number;
+  counts: Record<LeadStatus, number>;
+  conversionRate: number;
+}

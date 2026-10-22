@@ -3,8 +3,13 @@ import { getCurrentUser } from "../../../server/auth/current-user.service";
 import { SummaryCard } from "../../../components/dashboard/summary-card";
 import { Search } from "lucide-react";
 import { FunnelCard } from "../../../components/dashboard/funnel-card";
+import { LeadFunnelService } from "../../../server/leads/lead-funnel.service";
 
 import Link from "next/link";
+
+export const dynamic = "force-dynamic";
+
+const leadFunnelService = new LeadFunnelService();
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -12,6 +17,8 @@ export default async function DashboardPage() {
   if (!user) {
     redirect("/login");
   }
+
+  const funnel = await leadFunnelService.getByUser(user.id);
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -36,7 +43,7 @@ export default async function DashboardPage() {
 
         <SummaryCard />
 
-        <FunnelCard />
+        <FunnelCard data={funnel} />
       </div>
     </main>
   );
