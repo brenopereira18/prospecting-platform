@@ -10,7 +10,10 @@ import {
 } from "lucide-react";
 import { getCurrentUser } from "@/src/server/auth/current-user.service";
 import { LeadService } from "@/src/server/leads/leads.service";
-import { LEAD_STATUS_LABELS } from "@/src/constants/lead-status";
+import { prisma } from "@/lib/prisma/client";
+import { LeadStatusService } from "@/src/server/leads/lead-status.service";
+import { LeadStatusControl } from "@/src/components/leads/lead-status-control";
+import { LeadStatusHistory } from "@/src/components/leads/lead-status-history";
 import { LeadTabs } from "@/src/components/leads/lead-tabs";
 import { LeadAnalysis } from "@/src/components/leads/lead-analysis";
 import { PreliminaryScoreService } from "@/src/server/scoring/preliminary-score.service";
@@ -29,8 +32,12 @@ interface LeadDetailPageProps {
 }
 
 const leadService = new LeadService();
+const leadStatusService = new LeadStatusService(prisma);
 
-export default async function LeadDetailPage({ params, searchParams }: LeadDetailPageProps) {
+export default async function LeadDetailPage({
+  params,
+  searchParams,
+}: LeadDetailPageProps) {
   const user = await getCurrentUser();
 
   if (!user) {
@@ -44,10 +51,19 @@ export default async function LeadDetailPage({ params, searchParams }: LeadDetai
   if (!lead) {
     notFound();
   }
-  const { prototypes } = await prototypeService.leadCreationOptions(lead.id, user.id);
-  const query = await searchParams ?? {};
-  const selectedPrototypeId = prototypes.find(prototype => prototype.id === query.prototype)?.id;
-  const initialTab = query.tab === "prototypes" || selectedPrototypeId ? "prototypes" : "analysis";
+  const statusHistory = await leadStatusService.history(lead.id, user.id);
+  const { prototypes } = await prototypeService.leadCreationOptions(
+    lead.id,
+    user.id,
+  );
+  const query = (await searchParams) ?? {};
+  const selectedPrototypeId = prototypes.find(
+    (prototype) => prototype.id === query.prototype,
+  )?.id;
+  const initialTab =
+    query.tab === "prototypes" || selectedPrototypeId
+      ? "prototypes"
+      : "analysis";
 
   const preliminaryScoreService = new PreliminaryScoreService();
   const approachTemplates = await approachTemplateService.findByCategory(
@@ -102,13 +118,6 @@ export default async function LeadDetailPage({ params, searchParams }: LeadDetai
             </div>
 
             <div className="flex shrink-0 flex-wrap items-center gap-3 xl:flex-col xl:items-end">
-              <span className="inline-flex items-center gap-2 rounded-full border border-sidebar-hover bg-background/50 px-3 py-1.5 text-xs font-medium text-foreground">
-                <span
-                  aria-hidden="true"
-                  className="size-1.5 rounded-full bg-secundary"
-                />
-                {LEAD_STATUS_LABELS[lead.status]}
-              </span>
               <div className="flex flex-col items-start gap-1.5 xl:items-end">
                 <Link
                   href={`/leads/${lead.id}/prototipos/novo`}
@@ -117,7 +126,14 @@ export default async function LeadDetailPage({ params, searchParams }: LeadDetai
                   <WandSparkles aria-hidden="true" className="size-4" />
                   Gerar protótipo
                 </Link>
-                {prototypes.length > 0 && <Link href={`/prototipos/${prototypes[0].id}`} className="text-xs text-primary underline">Abrir protótipo existente ({prototypes.length})</Link>}
+                {prototypes.length > 0 && (
+                  <Link
+                    href={`/prototipos/${prototypes[0].id}`}
+                    className="text-xs text-primary underline"
+                  >
+                    Abrir protótipo existente ({prototypes.length})
+                  </Link>
+                )}
               </div>
             </div>
           </div>
@@ -162,11 +178,31 @@ export default async function LeadDetailPage({ params, searchParams }: LeadDetai
           </dl>
         </header>
 
+        <section
+          aria-label="Acompanhamento comercial"
+          className="overflow-hidden rounded-xl border border-sidebar-hover bg-card"
+        >
+          <div className="p-6 sm:px-7 sm:py-6">
+            <LeadStatusControl
+              leadId={lead.id}
+              status={lead.status}
+              statusRevision={lead.statusRevision}
+            />
+          </div>
+          <LeadStatusHistory entries={statusHistory} />
+        </section>
+
         {/* Conteúdo principal */}
         <LeadTabs
           key={`${initialTab}:${selectedPrototypeId ?? ""}`}
           initialTab={initialTab}
-          prototypes={<LeadPrototypes leadId={lead.id} prototypes={prototypes} selectedPrototypeId={selectedPrototypeId} />}
+          prototypes={
+            <LeadPrototypes
+              leadId={lead.id}
+              prototypes={prototypes}
+              selectedPrototypeId={selectedPrototypeId}
+            />
+          }
           analysis={
             <LeadAnalysis
               score={lead.score}

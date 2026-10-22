@@ -18,6 +18,7 @@ export interface LeadListItemDTO {
 }
 
 export interface LeadDetailDTO extends LeadListItemDTO {
+  statusRevision: number;
   source: LeadSource;
   sourceId: string | null;
   notes: string | null;
