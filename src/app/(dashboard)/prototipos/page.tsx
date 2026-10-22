@@ -1,8 +1,16 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Layers, Users } from "lucide-react";
 import { requirePrototypeUser } from "@/src/app/prototipos/_data";
 import { prototypeService } from "@/src/server/prototypes/prototype.service";
 import { PrototypeList } from "@/src/components/prototypes/prototype-list";
+import { PrototypePagination } from "@/src/components/prototypes/prototype-pagination";
+import {
+  getPrototypePageRedirect,
+  parsePrototypePage,
+  prototypePageHref,
+  PROTOTYPES_PER_PAGE,
+} from "@/src/components/prototypes/prototype-pagination.utils";
 
 export const dynamic = "force-dynamic";
 
@@ -12,11 +20,25 @@ export default async function PrototypesPage({
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const user = await requirePrototypeUser();
-  const [prototypes, query] = await Promise.all([
-    prototypeService.list(user.id),
-    searchParams ??
-      Promise.resolve({} as Record<string, string | string[] | undefined>),
-  ]);
+  const query: Record<string, string | string[] | undefined> =
+    await (searchParams ?? Promise.resolve({}));
+  const requested = parsePrototypePage(query.page);
+  const { prototypes, totalCount } = await prototypeService.listPage(
+    user.id,
+    requested.page,
+  );
+  const totalPages = Math.max(1, Math.ceil(totalCount / PROTOTYPES_PER_PAGE));
+  const selectedPrototypeId =
+    typeof query.prototype === "string" ? query.prototype : undefined;
+
+  if (!requested.valid) redirect(prototypePageHref(1, selectedPrototypeId));
+  const redirectPage = getPrototypePageRedirect(
+    requested.page,
+    totalCount,
+    prototypes.length > 0,
+  );
+  if (redirectPage)
+    redirect(prototypePageHref(redirectPage, selectedPrototypeId));
   return (
     <div className="px-4 py-6 sm:px-6 lg:px-8">
       <header className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
@@ -35,12 +57,18 @@ export default async function PrototypesPage({
         </Link>
       </header>
       {prototypes.length ? (
-        <PrototypeList
-          prototypes={prototypes}
-          selectedPrototypeId={
-            typeof query.prototype === "string" ? query.prototype : undefined
-          }
-        />
+        <>
+          <PrototypeList
+            prototypes={prototypes}
+            selectedPrototypeId={selectedPrototypeId}
+          />
+          <PrototypePagination
+            page={requested.page}
+            totalPages={totalPages}
+            totalCount={totalCount}
+            selectedPrototypeId={selectedPrototypeId}
+          />
+        </>
       ) : (
         <div className="rounded-xl border border-sidebar-hover bg-card px-6 py-12 text-center">
           <Layers

@@ -68,7 +68,7 @@ test("cards keep explicit draft, real preview, history and confirmed deletion ac
   ])
     assert.ok(html.includes(`href="${href}"`));
   assert.ok(html.includes("Editar rascunho"));
-  assert.ok(html.includes("Prévia"));
+  assert.ok(html.includes("Ver rascunho"));
   assert.ok(html.includes("Excluir definitivamente"));
   assert.ok(!/<dialog[^>]*\sopen[= >]/.test(html));
   assert.ok(!html.includes("<iframe"));

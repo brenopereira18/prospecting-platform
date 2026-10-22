@@ -26,7 +26,7 @@ export function EditorPersistenceControls({
   leadId?: string | null;
   onNavigate?: MouseEventHandler<HTMLAnchorElement>;
 }) {
-  const { status, busy, dirty, name, setName, revision } = persistence;
+  const { status, busy, dirty, name, setName } = persistence;
   const error = status.kind === "error" || status.kind === "conflict";
   const focus =
     "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
@@ -115,9 +115,6 @@ export function EditorPersistenceControls({
               >
                 Nome interno
               </label>
-              <span className="shrink-0 text-[11px] tabular-nums text-secundary">
-                Revisão {revision}
-              </span>
             </div>
             <input
               id="prototype-internal-name"

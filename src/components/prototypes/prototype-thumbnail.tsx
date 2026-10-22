@@ -78,7 +78,7 @@ export function PrototypeThumbnail({
       {ready && !failed ? (
         <Link
           href={preview}
-          aria-label={`Visualizar protótipo, versão ${version?.number}`}
+          aria-label={`Visualizar versão ${version?.number}`}
           className="absolute inset-0 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary"
         >
           <Image
@@ -93,7 +93,7 @@ export function PrototypeThumbnail({
           />
           <span className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-2 bg-black/75 px-3 py-3 text-xs font-medium text-white sm:opacity-0 sm:group-hover/thumbnail:opacity-100 sm:group-focus-within/thumbnail:opacity-100 motion-safe:transition-opacity">
             <ScanEye size={16} aria-hidden="true" />
-            Visualizar protótipo
+            Visualizar versão {version?.number}
           </span>
         </Link>
       ) : (

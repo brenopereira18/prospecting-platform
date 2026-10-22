@@ -3,6 +3,7 @@ import { validateDocumentAssets } from "../prototype-assets/document-assets";
 import { prisma } from "@/lib/prisma/client";
 import { Prisma, type PrismaClient, type Prototype, type PrototypeVersion } from "../../../generated/prisma/client";
 import { persistablePrototypeDocumentSchema } from "../../components/prototypes/schemas/persistable-document.schema";
+import { PROTOTYPES_PER_PAGE } from "../../components/prototypes/prototype-pagination.utils";
 import { createPrototypeSchema, createLeadPrototypeSchema, updatePrototypeDraftSchema, createPrototypeVersionSchema, deletePrototypeSchema, deletePrototypeVersionSchema, restorePrototypeVersionSchema } from "./prototype.schema";
 import { compatibleTemplates, configurationFromLead } from "./template-registry";
 import type { LeadPrototypeOptionsDTO } from "./prototype.dto";
@@ -123,6 +124,59 @@ export class PrototypeService {
       categoryName: row.lead?.userId === userId ? row.lead.category.name : null,
       latestVersion: row.versions[0] ? versionSummary(row.versions[0]) : null,
     }));
+  }
+
+  async listPage(
+    userId: string,
+    page: number,
+  ): Promise<{ prototypes: PrototypeSummaryDTO[]; totalCount: number }> {
+    const where = { userId };
+    const [rows, totalCount] = await Promise.all([
+      this.db.prototype.findMany({
+        where,
+        skip: (page - 1) * PROTOTYPES_PER_PAGE,
+        take: PROTOTYPES_PER_PAGE,
+        select: {
+          ...summarySelect,
+          draftDocument: true,
+          lead: {
+            select: {
+              name: true,
+              userId: true,
+              category: { select: { name: true } },
+            },
+          },
+          versions: {
+            take: 1,
+            orderBy: { number: "desc" },
+            select: {
+              id: true,
+              prototypeId: true,
+              number: true,
+              createdAt: true,
+              thumbnail: { select: { status: true } },
+            },
+          },
+        },
+        orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+      }),
+      this.db.prototype.count({ where }),
+    ]);
+    return {
+      prototypes: rows.map((row) => ({
+        ...summary(row),
+        businessName: persistablePrototypeDocumentSchema.parse(
+          row.draftDocument,
+        ).business.name,
+        leadName: row.lead?.userId === userId ? row.lead.name : null,
+        categoryName:
+          row.lead?.userId === userId ? row.lead.category.name : null,
+        latestVersion: row.versions[0]
+          ? versionSummary(row.versions[0])
+          : null,
+      })),
+      totalCount,
+    };
   }
 
   private async failedRevision(tx: Prisma.TransactionClient, id: string, userId: string): Promise<never> {

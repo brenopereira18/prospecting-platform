@@ -101,7 +101,7 @@ export function PrototypeList({
                     title="Abrir a prévia real do rascunho salvo"
                   >
                     <Eye size={15} aria-hidden="true" />
-                    Prévia
+                    Ver rascunho
                   </Link>
                 </div>
               </div>
