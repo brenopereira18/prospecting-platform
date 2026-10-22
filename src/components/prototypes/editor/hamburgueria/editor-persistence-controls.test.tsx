@@ -52,16 +52,16 @@ function button(html: string, label: string) {
   return match[1];
 }
 
-test("persistence controls expose internal name, revision, save and private version links", () => {
+test("persistence controls expose internal name, save and private version links without the technical revision", () => {
   const html = render(state({ dirty: true }));
   for (const text of [
     "Proposta do cliente",
-    "Revisão 4",
     "Salvar rascunho",
     "Criar versão",
     'href="/prototipos?prototype=private-id#prototipo-private-id"',
   ])
     assert.ok(html.includes(text), text);
+  assert.doesNotMatch(html, /Revisão 4/);
   assert.doesNotMatch(button(html, "Criar versão"), /\sdisabled=""/);
 });
 

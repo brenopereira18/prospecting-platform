@@ -29,7 +29,7 @@ test("saved thumbnails use authenticated direct image reads and link to their ex
   assert.ok(html.includes("aspect-[2.5/1]"));
   assert.ok(html.includes("motion-safe:transition-transform"));
   assert.ok(html.includes("group-focus-within/thumbnail"));
-  assert.ok(html.includes("Visualizar protótipo"));
+  assert.ok(html.includes("Visualizar versão 3"));
 });
 
 test("missing and legacy thumbnails offer explicit generation with a reserved ratio and no automatic requests", (t) => {
