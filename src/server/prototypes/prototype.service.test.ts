@@ -22,6 +22,36 @@ type Where = {
   leadId?: string;
 };
 
+test("prototype gallery queries only one user's requested page and counts that user's records", async () => {
+  const calls: {
+    findMany?: Record<string, unknown>;
+    count?: Record<string, unknown>;
+  } = {};
+  const db = {
+    prototype: {
+      findMany: async (args: Record<string, unknown>) => {
+        calls.findMany = args;
+        return [];
+      },
+      count: async (args: Record<string, unknown>) => {
+        calls.count = args;
+        return 47;
+      },
+    },
+  } as unknown as PrismaClient;
+
+  const result = await new PrototypeService(db).listPage(alice, 2);
+  assert.deepEqual(result, { prototypes: [], totalCount: 47 });
+  assert.deepEqual(calls.findMany?.where, { userId: alice });
+  assert.equal(calls.findMany?.skip, 20);
+  assert.equal(calls.findMany?.take, 20);
+  assert.deepEqual(calls.findMany?.orderBy, [
+    { createdAt: "desc" },
+    { id: "asc" },
+  ]);
+  assert.deepEqual(calls.count?.where, { userId: alice });
+});
+
 /** A transactional test double, not a substitute for PostgreSQL integration tests. */
 function memory() {
   const assets: {
