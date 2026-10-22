@@ -4,21 +4,32 @@ import { SummaryCard } from "../../../components/dashboard/summary-card";
 import { Search } from "lucide-react";
 import { FunnelCard } from "../../../components/dashboard/funnel-card";
 import { LeadFunnelService } from "../../../server/leads/lead-funnel.service";
+import { LeadMonthlyService } from "../../../server/leads/lead-monthly.service";
+import { MonthlyPerformance } from "../../../components/dashboard/monthly-performance";
 
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
 const leadFunnelService = new LeadFunnelService();
+const leadMonthlyService = new LeadMonthlyService();
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ month?: string | string[] }>;
+}) {
   const user = await getCurrentUser();
 
   if (!user) {
     redirect("/login");
   }
 
-  const funnel = await leadFunnelService.getByUser(user.id);
+  const { month } = await searchParams;
+  const [funnel, monthly] = await Promise.all([
+    leadFunnelService.getByUser(user.id),
+    leadMonthlyService.getByUser(user.id, month),
+  ]);
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -43,6 +54,7 @@ export default async function DashboardPage() {
 
         <SummaryCard />
 
+        <MonthlyPerformance data={monthly} />
         <FunnelCard data={funnel} />
       </div>
     </main>

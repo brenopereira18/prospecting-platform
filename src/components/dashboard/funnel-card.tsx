@@ -63,7 +63,7 @@ export function FunnelCard({ data }: { data: LeadCommercialFunnelDTO }) {
               </h2>
             </div>
             <p className="mt-1 text-xs text-secundary">
-              Distribuição por status atual
+              Situação atual dos leads, independentemente do mês selecionado.
             </p>
           </div>
           <div className="flex items-center gap-2 text-sm">

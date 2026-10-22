@@ -41,7 +41,8 @@ const navigation = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const compactOnMobile = pathname === "/prototipos";
+  const compactOnMobile =
+    pathname === "/prototipos" || pathname === "/dashboard";
 
   return (
     <aside
