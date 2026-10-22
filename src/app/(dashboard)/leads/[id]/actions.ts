@@ -5,6 +5,23 @@ import { z } from "zod";
 
 import { getCurrentUser } from "@/src/server/auth/current-user.service";
 import { leadInteractionService } from "@/src/server/lead-interactions/lead-interaction.service";
+import { prisma } from "@/lib/prisma/client";
+import { LeadStatusService } from "@/src/server/leads/lead-status.service";
+import { createChangeLeadStatusAction } from "@/src/server/leads/lead-status-action";
+
+const changeStatus = createChangeLeadStatusAction({
+  getUser: getCurrentUser,
+  service: new LeadStatusService(prisma),
+  invalidate: (leadId) => {
+    revalidatePath(`/leads/${leadId}`);
+    revalidatePath("/leads");
+    revalidatePath("/dashboard");
+  },
+});
+
+export async function changeLeadStatusAction(input: unknown) {
+  return changeStatus(input);
+}
 
 const createInteractionSchema = z.object({
   leadId: z.string().uuid(),

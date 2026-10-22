@@ -141,6 +141,7 @@ export class LeadService {
         status: true,
 
         source: true,
+        statusRevision: true,
         sourceId: true,
         notes: true,
         wizardStep: true,
