@@ -24,6 +24,9 @@ import { leadInteractionService } from "@/src/server/lead-interactions/lead-inte
 import { prototypeService } from "@/src/server/prototypes/prototype.service";
 import { LeadPrototypes } from "@/src/components/prototypes/lead-prototypes";
 
+import { ProposalService } from "@/src/server/proposals/proposal.service";
+import { LeadProposals } from "@/src/components/proposals/lead-proposals";
+
 interface LeadDetailPageProps {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
   params: Promise<{
@@ -51,6 +54,7 @@ export default async function LeadDetailPage({
   if (!lead) {
     notFound();
   }
+  const proposals = await new ProposalService(prisma).list(lead.id, user.id);
   const statusHistory = await leadStatusService.history(lead.id, user.id);
   const { prototypes } = await prototypeService.leadCreationOptions(
     lead.id,
@@ -63,7 +67,9 @@ export default async function LeadDetailPage({
   const initialTab =
     query.tab === "prototypes" || selectedPrototypeId
       ? "prototypes"
-      : "analysis";
+      : query.tab === "proposals"
+        ? "proposals"
+        : "analysis";
 
   const preliminaryScoreService = new PreliminaryScoreService();
   const approachTemplates = await approachTemplateService.findByCategory(
@@ -196,6 +202,7 @@ export default async function LeadDetailPage({
         <LeadTabs
           key={`${initialTab}:${selectedPrototypeId ?? ""}`}
           initialTab={initialTab}
+          proposals={<LeadProposals leadId={lead.id} proposals={proposals} />}
           prototypes={
             <LeadPrototypes
               leadId={lead.id}

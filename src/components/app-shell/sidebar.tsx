@@ -42,7 +42,7 @@ const navigation = [
 export function Sidebar() {
   const pathname = usePathname();
   const compactOnMobile =
-    pathname === "/prototipos" || pathname === "/dashboard";
+    pathname === "/prototipos" || pathname === "/dashboard" || pathname.startsWith("/leads/");
 
   return (
     <aside
