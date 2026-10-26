@@ -24,6 +24,7 @@ import { leadInteractionService } from "@/src/server/lead-interactions/lead-inte
 import { prototypeService } from "@/src/server/prototypes/prototype.service";
 import { LeadPrototypes } from "@/src/components/prototypes/lead-prototypes";
 
+import { FinanceService } from "@/src/server/finance/finance.service";
 import { ProposalService } from "@/src/server/proposals/proposal.service";
 import { LeadProposals } from "@/src/components/proposals/lead-proposals";
 
@@ -55,6 +56,7 @@ export default async function LeadDetailPage({
     notFound();
   }
   const proposals = await new ProposalService(prisma).list(lead.id, user.id);
+  const sales = await new FinanceService(prisma).forLead(lead.id, user.id);
   const statusHistory = await leadStatusService.history(lead.id, user.id);
   const { prototypes } = await prototypeService.leadCreationOptions(
     lead.id,
@@ -186,23 +188,30 @@ export default async function LeadDetailPage({
 
         <section
           aria-label="Acompanhamento comercial"
-          className="overflow-hidden rounded-xl border border-sidebar-hover bg-card"
+          className="relative rounded-xl border border-sidebar-hover bg-card"
         >
-          <div className="p-6 sm:px-7 sm:py-6">
+          <div className="px-5 pt-3 pb-1 lg:py-3 lg:pr-48">
             <LeadStatusControl
               leadId={lead.id}
               status={lead.status}
               statusRevision={lead.statusRevision}
             />
           </div>
-          <LeadStatusHistory entries={statusHistory} />
+          <LeadStatusHistory entries={statusHistory} inline />
         </section>
 
         {/* Conteúdo principal */}
         <LeadTabs
           key={`${initialTab}:${selectedPrototypeId ?? ""}`}
           initialTab={initialTab}
-          proposals={<LeadProposals leadId={lead.id} proposals={proposals} />}
+          proposals={
+            <LeadProposals
+              leadId={lead.id}
+              leadStatus={lead.status}
+              proposals={proposals}
+              sales={sales}
+            />
+          }
           prototypes={
             <LeadPrototypes
               leadId={lead.id}

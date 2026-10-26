@@ -33,6 +33,16 @@ export default async function ProposalPage({
       notFound();
     throw error;
   });
+  const [sale, lead] = await Promise.all([
+    prisma.sale.findFirst({
+      where: { proposalId, userId: user.id, lead: { userId: user.id } },
+      select: { id: true },
+    }),
+    prisma.lead.findFirst({
+      where: { id, userId: user.id },
+      select: { status: true },
+    }),
+  ]);
   const editing =
     (await searchParams).edit === "1" &&
     proposal.status === "RASCUNHO" &&
@@ -79,6 +89,23 @@ export default async function ProposalPage({
             proposal={proposal}
           />
         )}
+        {sale ? (
+          <Link
+            href={`/financeiro/vendas/${sale.id}`}
+            className="inline-flex min-h-10 items-center rounded-lg border border-sidebar-hover px-4 text-sm text-primary focus-visible:outline-2 focus-visible:outline-primary"
+          >
+            Abrir venda registrada
+          </Link>
+        ) : proposal.status === "ACEITA" &&
+          lead?.status === "GANHO" &&
+          !proposal.deletedAt ? (
+          <Link
+            href={`/financeiro/vendas/nova?lead=${id}&proposal=${proposal.id}`}
+            className="inline-flex min-h-10 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-background focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          >
+            Registrar venda
+          </Link>
+        ) : null}
       </header>
       {editing ? (
         <ProposalForm

@@ -337,14 +337,57 @@ test(
       assert.ok(
         listBox && listBox.width >= 280 && listBox.x + listBox.width <= 390,
       );
+      assert.equal(
+        await page
+          .getByRole("link", { name: "Editar proposta", exact: true })
+          .count(),
+        1,
+      );
+      assert.equal(
+        await page.getByRole("button", { name: /Excluir proposta/ }).count(),
+        0,
+      );
+      const card = page.locator("#propostas article").first();
+      await card.locator("summary").focus();
+      await page.keyboard.press("Enter");
+      await card.getByRole("button", { name: /Excluir proposta/ }).waitFor();
+      await page.keyboard.press("Escape");
+      assert.equal(
+        await card
+          .getByRole("button", { name: /Excluir proposta/ })
+          .isVisible(),
+        false,
+      );
+      await page.setViewportSize({ width: 1440, height: 1000 });
+      await page.locator("#propostas").scrollIntoViewIfNeeded();
+      await page.screenshot({
+        path: "/tmp/prospecta-proposal-list-desktop.png",
+        fullPage: true,
+      });
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.locator("#propostas").scrollIntoViewIfNeeded();
       await page.screenshot({
         path: "/tmp/prospecta-proposal-list-mobile.png",
         fullPage: true,
       });
-      await page
-        .getByRole("button", { name: /Excluir proposta/ })
-        .first()
-        .click();
+      await card.locator("summary").click();
+      await card.getByRole("button", { name: /Excluir proposta/ }).click();
+      await page.getByRole("dialog").waitFor();
+      await page.keyboard.press("Escape");
+      assert.equal(
+        await db.commercialProposal.count({
+          where: { userId, deletedAt: { not: null } },
+        }),
+        0,
+      );
+      assert.ok(
+        await card
+          .locator("summary")
+          .evaluate((element) => element === document.activeElement),
+      );
+      await card.locator("summary").click();
+      await card.getByRole("button", { name: /Excluir proposta/ }).click();
+
       await page
         .getByRole("dialog")
         .getByRole("button", { name: "Excluir proposta", exact: true })

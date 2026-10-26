@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import {
   BarChart3,
+  Wallet,
   Search,
   LayoutDashboard,
   Settings,
@@ -33,6 +34,11 @@ const navigation = [
     icon: LayoutDashboard,
   },
   {
+    label: "Financeiro",
+    href: "/financeiro",
+    icon: Wallet,
+  },
+  {
     label: "Configurações",
     href: "/configuracoes",
     icon: Settings,
@@ -42,7 +48,10 @@ const navigation = [
 export function Sidebar() {
   const pathname = usePathname();
   const compactOnMobile =
-    pathname === "/prototipos" || pathname === "/dashboard" || pathname.startsWith("/leads/");
+    pathname.startsWith("/financeiro") ||
+    pathname === "/prototipos" ||
+    pathname === "/dashboard" ||
+    pathname.startsWith("/leads/");
 
   return (
     <aside

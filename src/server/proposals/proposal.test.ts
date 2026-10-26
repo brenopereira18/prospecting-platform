@@ -211,9 +211,12 @@ test("PDF presents the commercial narrative in order and preserves every registe
     "Condições de pagamento",
     "Hospedagem e manutenção",
     "Observações e condições comerciais",
-    "Vamos iniciar o projeto?",
   ];
   let position = html.indexOf("<body>");
+  assert.doesNotMatch(
+    html,
+    /Vamos iniciar o projeto\?|Para aprovar esta proposta e alinhar a contratação/,
+  );
   for (const label of labels) {
     const next = html.indexOf(label, position + 1);
     assert.ok(next > position, `${label} must follow the previous section`);

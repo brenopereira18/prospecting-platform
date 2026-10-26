@@ -1,3 +1,4 @@
+import { reviseProposalCopy } from "./proposal-copy";
 import { z } from "zod";
 import {
   Prisma,
@@ -44,7 +45,8 @@ function dto(row: CommercialProposal): ProposalDTO {
     deletedAt: row.deletedAt?.toISOString() ?? null,
   };
 }
-function contentData(content: ProposalContent) {
+function contentData(input: ProposalContent) {
+  const content = reviseProposalCopy(input);
   return {
     ...content,
     total: new Prisma.Decimal(content.total),
@@ -128,7 +130,9 @@ export class ProposalService {
             "Identificador já utilizado. Reabra o formulário.",
           );
         const saved = dto(existing);
-        const sameContent = Object.entries(data.content).every(
+        const sameContent = Object.entries(
+          reviseProposalCopy(data.content),
+        ).every(
           ([key, value]) => saved[key as keyof ProposalContent] === value,
         );
         if (!sameContent || saved.deletedAt)
@@ -204,6 +208,18 @@ export class ProposalService {
       const updated = await tx.commercialProposal.update({
         where: { id: row.id },
         data: {
+          ...(row.status === "RASCUNHO" && !row.lockedAt
+            ? contentData(
+                proposalContentSchema.parse(
+                  Object.fromEntries(
+                    Object.keys(proposalContentSchema.shape).map((key) => [
+                      key,
+                      dto(row)[key as keyof ProposalDTO],
+                    ]),
+                  ),
+                ),
+              )
+            : {}),
           status: data.status,
           lockedAt: row.lockedAt ?? new Date(),
           revision: { increment: 1 },

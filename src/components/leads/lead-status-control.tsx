@@ -79,9 +79,9 @@ export function LeadStatusControl({
       onSubmit={submit}
       aria-label="Alterar status comercial"
       aria-busy={pending}
-      className="space-y-3"
+      className="space-y-2"
     >
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
         <div>
           <label
             htmlFor={id}

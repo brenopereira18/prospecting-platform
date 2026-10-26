@@ -61,4 +61,6 @@ test("history shows actual transitions and formats their effective timestamps in
   assert.ok(html.includes("21/10/2026 às 22:30"));
   assert.match(html, /<time\b[^>]*datetime="2026-10-22T01:30:00.000Z"/i);
   assert.ok(html.includes("mais recentes primeiro"));
+  assert.match(html, /aria-label="Histórico comercial \(1\)"/);
+  assert.doesNotMatch(html, /<details[^>]*\bopen[= >]/);
 });

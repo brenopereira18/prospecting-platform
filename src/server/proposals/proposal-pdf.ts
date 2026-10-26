@@ -37,11 +37,10 @@ export function proposalPdfHtml(proposal: ProposalDTO) {
   h1{font-size:27px;line-height:1.18;letter-spacing:-.5px;margin:0;padding:20px 0 5px;overflow-wrap:anywhere;white-space:pre-wrap;break-after:avoid}
   h2{font-size:12.5px;line-height:1.35;margin:0 0 7px;font-weight:700;break-after:avoid}
   p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;orphans:3;widows:3}
-  .section{padding:16px 0 0;break-inside:avoid}.section p{color:#344e59}
+  .section{padding:14px 0 0;break-inside:avoid}.section p{color:#344e59}
   .investment-wrap{padding:18px 0 2px;break-inside:avoid}
   .investment{display:flex;align-items:center;justify-content:space-between;gap:20px;background:#edf5f5;border-left:3px solid #287f89;padding:15px 18px}
   .investment h2{margin:0;font-size:12px}.investment .amount{font-size:28px;line-height:1.2;font-weight:700;letter-spacing:-.5px;color:#226a72;white-space:nowrap;font-variant-numeric:tabular-nums}
-  .closing{padding-top:18px;break-inside:avoid}.closing>div{border-top:1px solid #dce6e8;padding-top:13px}.closing h2{color:#226a72}.closing p{color:#344e59}
   .draft{padding-top:12px;font-size:10px;color:#5d7078}
   </style></head><body><main><header><div class="meta"><span class="brand">Prospecta</span><div class="reference">Proposta comercial ${proposalReference(proposal)}<br>Emitida em ${formatProposalDate(proposal.createdAt)}</div></div>${proposal.status === "RASCUNHO" ? '<p class="draft">Rascunho · sujeito a revisão antes do envio</p>' : ""}<div class="parties"><div><p class="label">Preparada para</p><p><strong>${escape(proposal.clientName)}</strong></p>${[
     proposal.clientAddress,
@@ -54,9 +53,7 @@ export function proposalPdfHtml(proposal: ProposalDTO) {
     )}</div><div><p class="label">Responsável pela proposta</p><p><strong>${escape(proposal.issuerName)}</strong></p><p>${escape(proposal.issuerEmail)}</p></div></div><h1>${escape(proposal.title)}</h1></header>${sections.slice(0, 2).map(renderSection).join("")}<section class="investment-wrap"><div class="investment"><h2>Investimento no projeto</h2><p class="amount">${formatMoney(proposal.total)}</p></div></section>${sections
     .slice(2)
     .map((section, index) => renderSection(section, index + 2))
-    .join(
-      "",
-    )}<section class="closing"><div><h2>Vamos iniciar o projeto?</h2><p>Para aprovar esta proposta e alinhar a contratação, entre em contato com ${escape(proposal.issuerName)} pelo e-mail ${escape(proposal.issuerEmail)}.</p></div></section></main></body></html>`;
+    .join("")}</main></body></html>`;
 }
 
 // Runs only through Playwright's isolated evaluation, never from proposal content.
