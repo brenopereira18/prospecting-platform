@@ -4,11 +4,17 @@ import { useId, useRef, useState } from "react";
 import {
   ChartNoAxesCombined,
   Layers,
+  FileText,
   MessagesSquare,
   Send,
 } from "lucide-react";
 
-type LeadTab = "analysis" | "approach" | "interactions" | "prototypes";
+type LeadTab =
+  | "analysis"
+  | "approach"
+  | "interactions"
+  | "prototypes"
+  | "proposals";
 
 const tabs = [
   {
@@ -38,6 +44,12 @@ const tabs = [
     description:
       "Os protótipos deste negócio aparecerão aqui quando a geração estiver disponível.",
   },
+  {
+    id: "proposals",
+    label: "Propostas",
+    icon: FileText,
+    description: "Prepare e acompanhe as propostas comerciais deste lead.",
+  },
 ] as const;
 
 interface LeadTabsProps {
@@ -46,6 +58,7 @@ interface LeadTabsProps {
   approach?: React.ReactNode;
   interactions?: React.ReactNode;
   prototypes?: React.ReactNode;
+  proposals?: React.ReactNode;
 }
 
 export function LeadTabs({
@@ -54,6 +67,7 @@ export function LeadTabs({
   approach,
   interactions,
   prototypes,
+  proposals,
 }: LeadTabsProps) {
   const [activeTab, setActiveTab] = useState<LeadTab>(initialTab);
   const id = useId();
@@ -66,6 +80,7 @@ export function LeadTabs({
     approach,
     interactions,
     prototypes,
+    proposals,
   };
 
   return (
