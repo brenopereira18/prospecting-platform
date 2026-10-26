@@ -20,6 +20,7 @@ async function execute(
     };
   try {
     const result = await operation(user.id);
+    revalidatePath("/dashboard");
     revalidatePath("/financeiro");
     revalidatePath(`/financeiro/vendas/${result.saleId}`);
     revalidatePath(`/leads/${result.leadId}`, "page");

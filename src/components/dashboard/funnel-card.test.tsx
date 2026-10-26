@@ -44,6 +44,8 @@ test("current status bars use the registered total and terminal outcomes are gro
     );
   assert.ok(html.includes('aria-label="Em andamento"'));
   assert.ok(html.includes('aria-label="Resultados"'));
+  assert.match(html, /Situação atual dos leads/);
+  assert.match(html, /Todos os períodos\./);
   assert.ok(html.includes("20%"));
   assert.ok(html.includes("Leads ganhos ÷ total de leads cadastrados."));
 });
