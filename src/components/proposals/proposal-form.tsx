@@ -274,6 +274,11 @@ export function ProposalForm({
           {textField("title", "Título da proposta", 160)}
           {textField("description", "Descrição do serviço", 4000, true)}
           {textField("scope", "Escopo e entregáveis", 8000, true)}
+          <p className="text-xs leading-5 text-secundary">
+            Descreva o que o SEO inclui nesta proposta. Uma rodada de ajustes
+            reúne os pedidos de revisão do cliente; mantenha a quantidade
+            combinada.
+          </p>
         </Block>
         <Block title="Investimento e pagamento">
           {moneyField("total", "Valor do desenvolvimento (R$)")}
@@ -424,6 +429,12 @@ export function ProposalForm({
           )}
         </Block>
         <Block title="Observações">
+          <p className="text-xs leading-5 text-secundary">
+            Registre os pagamentos em Condições de pagamento.{" "}
+            {content.paymentMode === "A_NEGOCIAR"
+              ? "Evite fixar entrada, parcelas ou vencimento do saldo nas observações enquanto estiverem a combinar."
+              : "As observações devem respeitar os valores e formas cadastrados."}
+          </p>
           {textField("notes", "Informações adicionais (opcional)", 4000, true)}
         </Block>
       </fieldset>

@@ -1,3 +1,4 @@
+import { proposalPresentationContent } from "./proposal-copy";
 import {
   balanceOf,
   formatMoney,
@@ -32,7 +33,8 @@ function definedPayments(proposal: ProposalDTO) {
       : []),
   ].join("\n");
 }
-export function proposalSections(proposal: ProposalDTO) {
+export function proposalSections(input: ProposalDTO) {
+  const proposal = proposalPresentationContent(input);
   const payments =
     proposal.paymentMode === "A_NEGOCIAR"
       ? "Pagamento via Pix ou cartão de crédito. Entrada e parcelamento a combinar.\nAs condições poderão ser negociadas antes da contratação."

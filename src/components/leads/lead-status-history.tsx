@@ -1,4 +1,4 @@
-import { ArrowRight, History } from "lucide-react";
+import { ArrowRight, ChevronDown } from "lucide-react";
 import { LEAD_STATUS_LABELS } from "../../constants/lead-status";
 import type { LeadStatusHistoryDTO } from "../../server/leads/lead-status.schema";
 
@@ -10,21 +10,26 @@ const date = new Intl.DateTimeFormat("pt-BR", {
 
 export function LeadStatusHistory({
   entries,
+  inline = false,
 }: {
   entries: LeadStatusHistoryDTO[];
+  inline?: boolean;
 }) {
   return (
-    <details className="border-t border-sidebar-hover">
-      <summary className="min-h-12 cursor-pointer rounded-b-xl px-6 py-4 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:px-7">
-        <span className="ml-2 inline-flex items-center gap-2">
-          <History size={16} aria-hidden="true" />
-          Histórico comercial{" "}
-          <span className="text-xs tabular-nums text-secundary">
-            ({entries.length})
-          </span>
-        </span>
+    <details className="group/status-history">
+      <summary
+        aria-label={`Histórico comercial (${entries.length})`}
+        className={`inline-flex min-h-11 w-fit cursor-pointer list-none items-center gap-2 rounded text-sm text-secundary hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary [&::-webkit-details-marker]:hidden ${inline ? "mb-1 ml-4 px-1 lg:absolute lg:top-3 lg:right-5 lg:m-0 lg:px-2" : "px-5"}`}
+      >
+        Histórico{" "}
+        <span className="text-xs tabular-nums">({entries.length})</span>
+        <ChevronDown
+          size={14}
+          aria-hidden
+          className="transition-transform group-open/status-history:rotate-180 motion-reduce:transition-none"
+        />
       </summary>
-      <div className="px-6 py-4 sm:px-7">
+      <div className="px-5 pb-4 pt-2">
         {entries.length === 0 ? (
           <p className="text-sm leading-6 text-secundary">
             Nenhuma mudança de status registrada. O status atual foi preservado;
@@ -32,7 +37,7 @@ export function LeadStatusHistory({
           </p>
         ) : (
           <ol
-            className="relative ml-1 space-y-5 before:absolute before:inset-y-2 before:left-[5px] before:w-px before:bg-sidebar-hover"
+            className="relative ml-1 space-y-4 before:absolute before:inset-y-2 before:left-[5px] before:w-px before:bg-sidebar-hover"
             aria-label="Mudanças de status, mais recentes primeiro"
           >
             {entries.map((entry, index) => (
