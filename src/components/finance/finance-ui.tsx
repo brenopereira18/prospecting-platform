@@ -1,4 +1,58 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
+import { statusLabels } from "@/src/server/finance/recurring.schema";
+
+export function ContractStatusBadge({
+  status,
+}: {
+  status: keyof typeof statusLabels;
+}) {
+  const color =
+    status === "ATIVO"
+      ? "bg-primary/10 text-primary"
+      : status === "SUSPENSO"
+        ? "bg-amber-400/10 text-amber-300"
+        : "bg-sidebar-hover text-secundary";
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium leading-none ${color}`}
+    >
+      <span aria-hidden className="size-1.5 rounded-full bg-current" />
+      {statusLabels[status]}
+    </span>
+  );
+}
+
+export const contractRowGrid =
+  "grid grid-cols-2 gap-x-5 gap-y-3 lg:grid-cols-[minmax(0,1fr)_10rem_12rem]";
+export function FinanceNavigation({ view }: { view: string }) {
+  return (
+    <nav
+      aria-label="Visões do financeiro"
+      className="grid grid-cols-2 gap-1 border-b border-sidebar-hover px-2 sm:flex sm:gap-7 sm:px-5"
+    >
+      {[
+        ["sales", "Vendas"],
+        ["accounts", "Contas a receber"],
+        ["receipts", "Recebimentos"],
+        ["contracts", "Contratos"],
+      ].map(([key, label]) => (
+        <Link
+          key={key}
+          href={
+            key === "contracts"
+              ? "/financeiro/contratos"
+              : `/financeiro?view=${key}`
+          }
+          aria-current={view === key ? "page" : undefined}
+          className={`flex min-h-12 items-center justify-center border-b-2 px-1 py-3 text-center text-xs font-medium focus-visible:outline-2 focus-visible:outline-primary sm:shrink-0 sm:text-sm ${view === key ? "border-primary text-primary" : "border-transparent text-secundary hover:text-foreground"}`}
+        >
+          {label}
+        </Link>
+      ))}
+    </nav>
+  );
+}
 export const receivableRowGrid =
   "grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 xl:grid-cols-[minmax(0,1fr)_6.25rem_5rem_9rem_8.5rem_1rem]";
 export const financeInput =

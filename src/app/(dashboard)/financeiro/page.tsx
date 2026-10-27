@@ -11,6 +11,7 @@ import {
 } from "@/src/server/proposals/proposal.schema";
 import {
   FinanceTotals,
+  FinanceNavigation,
   financeButton,
 } from "@/src/components/finance/finance-ui";
 export default async function FinancePage({
@@ -74,25 +75,7 @@ export default async function FinancePage({
         outstanding={data.outstanding}
       />
       <section className="min-w-0 rounded-xl border border-sidebar-hover bg-card">
-        <nav
-          aria-label="Visões do financeiro"
-          className="grid grid-cols-3 gap-1 border-b border-sidebar-hover px-2 sm:flex sm:gap-7 sm:px-5"
-        >
-          {[
-            ["sales", "Vendas"],
-            ["accounts", "Contas a receber"],
-            ["receipts", "Recebimentos"],
-          ].map(([key, label]) => (
-            <Link
-              key={key}
-              href={`/financeiro?view=${key}`}
-              aria-current={view === key ? "page" : undefined}
-              className={`flex min-h-14 items-center justify-center border-b-2 px-1 py-3 text-center text-xs font-medium focus-visible:outline-2 focus-visible:outline-primary sm:shrink-0 sm:py-4 sm:text-sm ${view === key ? "border-primary text-primary" : "border-transparent text-secundary hover:text-foreground"}`}
-            >
-              {label}
-            </Link>
-          ))}
-        </nav>
+        <FinanceNavigation view={view} />
         <div className="px-5 py-2.5 text-xs text-secundary">
           <span>
             {data.count}{" "}
