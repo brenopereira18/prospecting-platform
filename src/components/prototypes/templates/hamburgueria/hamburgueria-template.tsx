@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
-import { Barlow, Barlow_Condensed, Caveat } from "next/font/google";
+import { Barlow, Barlow_Condensed } from "next/font/google";
+import localFont from "next/font/local";
 import "./hamburgueria.css";
 import type { HamburgueriaPrototypeDocument } from "./schema/hamburgueria.schema";
 import { HamburgueriaDocumentProvider } from "./components/document-provider";
@@ -20,9 +21,12 @@ const displayFont = Barlow_Condensed({
   variable: "--font-hamburgueria-display",
 });
 
-const handFont = Caveat({
-  subsets: ["latin"],
-  weight: ["600", "700"],
+// Google may return Caveat URLs containing query parameters that fail in
+// Turbopack's Google-font resolver. Keep the original font bundled locally.
+const handFont = localFont({
+  src: "./fonts/Caveat-Variable.ttf",
+  weight: "400 700",
+  style: "normal",
   display: "swap",
   variable: "--font-hamburgueria-hand",
 });
