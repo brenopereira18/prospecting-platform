@@ -30,13 +30,13 @@ const conflict = () =>
     "CONFLICT",
     "Este registro já existe com outros dados. Abra o registro salvo antes de continuar.",
   );
-const accountInclude = {
+export const accountInclude = {
   receipts: {
     include: { reversal: true },
     orderBy: [{ receivedOn: "desc" as const }, { id: "desc" as const }],
   },
 };
-function accountDTO(
+export function accountDTO(
   row: Prisma.ReceivableGetPayload<{ include: typeof accountInclude }>,
 ) {
   const received = row.receipts
@@ -47,6 +47,7 @@ function accountDTO(
     .toFixed(2);
   return {
     ...row,
+    competence: row.competence?.toISOString().slice(0, 7) ?? null,
     amount: row.amount.toFixed(2),
     dueOn: row.dueOn.toISOString().slice(0, 10),
     received,
@@ -263,7 +264,11 @@ export class FinanceService {
     const row = await this.db.sale.findFirst({
       where: { id, userId, lead: { userId } },
       include: {
-        receivables: { include: accountInclude, orderBy: { sequence: "asc" } },
+        receivables: {
+          where: { contractId: null },
+          include: accountInclude,
+          orderBy: { sequence: "asc" },
+        },
       },
     });
     if (!row) throw missing();
@@ -300,7 +305,10 @@ export class FinanceService {
           await Promise.all([
             tx.sale.aggregate({ where: scope, _sum: { total: true } }),
             tx.receipt.aggregate({
-              where: { receivable: { sale: scope }, reversal: null },
+              where: {
+                receivable: { sale: scope, contractId: null },
+                reversal: null,
+              },
               _sum: { amount: true },
             }),
             view === "sales"
@@ -322,7 +330,7 @@ export class FinanceService {
             view === "accounts" ? this.groupedAccounts(tx, userId, skip) : [],
             view === "receipts"
               ? tx.receipt.findMany({
-                  where: { receivable: { sale: scope } },
+                  where: { receivable: { sale: scope, contractId: null } },
                   include: {
                     reversal: true,
                     receivable: {
@@ -342,9 +350,14 @@ export class FinanceService {
               ? tx.sale.count({ where: scope })
               : view === "accounts"
                 ? tx.sale.count({
-                    where: { ...scope, receivables: { some: {} } },
+                    where: {
+                      ...scope,
+                      receivables: { some: { contractId: null } },
+                    },
                   })
-                : tx.receipt.count({ where: { receivable: { sale: scope } } }),
+                : tx.receipt.count({
+                    where: { receivable: { sale: scope, contractId: null } },
+                  }),
           ]);
         return {
           sold: (sold._sum.total ?? new Prisma.Decimal(0)).toFixed(2),
@@ -387,7 +400,7 @@ export class FinanceService {
         JOIN leads l ON l.id = s."leadId"
         LEFT JOIN receipts p ON p."receivableId" = r.id
         LEFT JOIN receipt_reversals reversal ON reversal."receiptId" = p.id
-        WHERE s."userId" = ${userId} AND l."userId" = ${userId}
+        WHERE s."userId" = ${userId} AND l."userId" = ${userId} AND r."contractId" IS NULL
         GROUP BY r.id, r."saleId", r."dueOn", r.amount
       )
       SELECT "saleId" AS id,
@@ -409,7 +422,11 @@ export class FinanceService {
         title: true,
         clientName: true,
         total: true,
-        receivables: { include: accountInclude, orderBy: { sequence: "asc" } },
+        receivables: {
+          where: { contractId: null },
+          include: accountInclude,
+          orderBy: { sequence: "asc" },
+        },
       },
     });
     const byId = new Map(rows.map((row) => [row.id, row]));

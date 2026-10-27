@@ -15,8 +15,19 @@ export function ReceivableCard({
   account: SaleDetail["receivables"][number];
   compact?: boolean;
 }) {
+  const description = account.competence
+    ? `${account.competence.slice(5)}/${account.competence.slice(0, 4)} · ${account.description}`
+    : account.description;
   const details = (
     <>
+      {compact && account.competence && (
+        <p
+          data-account-description
+          className="mb-3 break-words text-sm font-medium"
+        >
+          {description}
+        </p>
+      )}
       {compact && (
         <dl className="mb-3 flex flex-wrap gap-x-6 gap-y-2 text-xs">
           <div>
@@ -112,15 +123,15 @@ export function ReceivableCard({
     return (
       <details id={`conta-${account.id}`} className="group/account min-w-0">
         <summary
-          aria-label={`Conta ${account.sequence}: ${account.description}. ${account.status}${account.overdue ? ", vencida" : ""}. Saldo pendente: ${formatMoney(account.outstanding)}`}
+          aria-label={`${account.competence ? `Mensalidade ${account.competence}` : `Conta ${account.sequence}`}: ${account.description}. ${account.status}${account.overdue ? ", vencida" : ""}. Saldo pendente: ${formatMoney(account.outstanding)}`}
           className={`${receivableRowGrid} min-h-11 cursor-pointer list-none items-center gap-y-1 px-5 py-2 text-sm hover:bg-sidebar-hover/20 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary [&::-webkit-details-marker]:hidden`}
         >
           <span
             data-account-column="description"
             className="col-start-1 row-start-1 flex min-w-0 items-center gap-1.5 font-medium"
-            title={account.description}
+            title={description}
           >
-            <span className="truncate">{account.description}</span>
+            <span className="truncate">{description}</span>
             <ChevronDown
               aria-hidden
               className="size-3 shrink-0 text-secundary group-open/account:rotate-180 xl:hidden"
@@ -169,7 +180,9 @@ export function ReceivableCard({
       <header className="flex flex-wrap justify-between gap-4">
         <div>
           <p className="mb-1 text-xs text-secundary">
-            Conta {account.sequence}
+            {account.competence
+              ? `Competência ${account.competence}`
+              : `Conta ${account.sequence}`}
           </p>
           <h3 className="font-semibold">{account.description}</h3>
           <p className="mt-1 text-sm text-secundary">
