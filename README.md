@@ -25,6 +25,12 @@ deve corresponder às configurações de `docker-compose.yml`. As migrations sã
 aplicadas pelo comando explícito acima, não pelo servidor de desenvolvimento.
 O fluxo persistido exige uma conta existente e login em `/login`.
 
+Para produção, configure `DATABASE_URL` nas variáveis de ambiente da Vercel com
+a conexão do PostgreSQL do Supabase. O `.env` local continua apontando para o
+Docker; não copie a URL local para a Vercel. Consulte
+[Bancos por ambiente](docs/database-environments.md) antes de aplicar migrations
+em um ambiente remoto.
+
 ## Fluxos e estrutura
 
 - `/descobrir-negocios` e `/leads`: descoberta e gerenciamento de leads.
