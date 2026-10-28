@@ -115,6 +115,18 @@ export class RecurringService {
     const data = updateContractSchema.parse(input);
     return this.db.$transaction(async (tx) => {
       const row = await this.lock(tx, data.id, userId);
+      if (
+        await tx.asaasCheckout.count({
+          where: {
+            contractId: row.id,
+            status: { notIn: ["CANCELED", "EXPIRED", "REJECTED"] },
+          },
+        })
+      )
+        throw new FinanceError(
+          "CONFLICT",
+          "Este contrato tem uma contratação Asaas. Cancele a recorrência antes de renegociar condições e solicitar novo aceite.",
+        );
       if (row.revision !== data.expectedRevision) throw conflict();
       if (row.status === "CANCELADO")
         throw new FinanceError(
@@ -153,6 +165,23 @@ export class RecurringService {
     const data = contractStatusSchema.parse(input);
     return this.db.$transaction(async (tx) => {
       const row = await this.lock(tx, data.id, userId);
+      const gateway = await tx.asaasCheckout.findFirst({
+        where: {
+          contractId: row.id,
+          status: { notIn: ["CANCELED", "EXPIRED", "REJECTED"] },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+      const expectedRemote = {
+        ATIVO: "ACTIVE",
+        SUSPENSO: "INACTIVE",
+        CANCELADO: "DELETED",
+      }[data.status];
+      if (gateway && gateway.subscriptionStatus !== expectedRemote)
+        throw new FinanceError(
+          "CONFLICT",
+          "Altere a recorrência pelo painel Asaas deste contrato; a confirmação externa é obrigatória.",
+        );
       if (row.revision !== data.expectedRevision) throw conflict();
       if (row.status === data.status) return { contractId: row.id };
       if (row.status === "CANCELADO")
@@ -185,6 +214,18 @@ export class RecurringService {
     const data = generateMonthlySchema.parse(input);
     return this.db.$transaction(async (tx) => {
       const row = await this.lock(tx, data.id, userId);
+      if (
+        await tx.asaasCheckout.count({
+          where: {
+            contractId: row.id,
+            status: { notIn: ["CANCELED", "EXPIRED", "REJECTED"] },
+          },
+        })
+      )
+        throw new FinanceError(
+          "CONFLICT",
+          "As mensalidades deste contrato são importadas do Asaas. Use Conciliar para evitar cobrança duplicada.",
+        );
       const competence = monthDate(data.competence);
       // Retries return the immutable account even if the contract has changed since.
       const existing = await tx.receivable.findUnique({

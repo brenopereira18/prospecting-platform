@@ -20,6 +20,7 @@ import {
   GenerateMonthly,
 } from "@/src/components/finance/contract-controls";
 import { ReceivableList } from "@/src/components/finance/receivable-card";
+import { AsaasPanel } from "@/src/components/finance/asaas-panel";
 import {
   financeButton,
   ContractStatusBadge,
@@ -132,6 +133,12 @@ export default async function ContractPage({
           </details>
         )}
       </section>
+      <AsaasPanel
+        saleId={row.saleId}
+        contractId={id}
+        userId={user.id}
+        revision={row.revision}
+      />
       <section className="space-y-4">
         <GenerateMonthly
           id={id}

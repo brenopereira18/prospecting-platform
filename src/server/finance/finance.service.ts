@@ -13,10 +13,7 @@ import {
 export class FinanceError extends Error {
   constructor(
     public readonly code:
-      | "UNAUTHENTICATED"
-      | "NOT_FOUND"
-      | "CONFLICT"
-      | "INVALID",
+      "UNAUTHENTICATED" | "NOT_FOUND" | "CONFLICT" | "INVALID",
     message: string,
   ) {
     super(message);
@@ -200,43 +197,69 @@ export class FinanceService {
         "INVALID",
         "Recebimentos devem ter uma data efetiva, até hoje.",
       );
-    return this.db.$transaction(async (tx) => {
-      const account = await this.lockAccount(tx, data.receivableId, userId);
-      const existing = await tx.receipt.findUnique({
-        where: { id: data.id },
-        include: { reversal: true },
-      });
-      if (existing) {
-        if (
-          existing.receivableId !== account.id ||
-          !existing.amount.equals(data.amount) ||
-          existing.receivedOn.toISOString().slice(0, 10) !== data.receivedOn ||
-          existing.paymentMethod !== data.paymentMethod ||
-          existing.notes !== data.notes ||
-          existing.reversal
-        )
-          throw conflict();
-        return { saleId: account.saleId, leadId: account.sale.leadId };
-      }
-      const paid = await tx.receipt.aggregate({
-        where: { receivableId: account.id, reversal: null },
-        _sum: { amount: true },
-      });
-      const balance = account.amount.minus(paid._sum.amount ?? 0);
-      if (balance.lessThan(data.amount))
-        throw new FinanceError(
-          "CONFLICT",
-          "O valor ultrapassa o saldo disponível. Atualize a conta e revise o recebimento.",
-        );
-      await tx.receipt.create({
-        data: {
-          ...data,
-          amount: new Prisma.Decimal(data.amount),
-          receivedOn: date(data.receivedOn),
+    return this.db.$transaction((tx) =>
+      this.receiveInTransaction(tx, data, userId),
+    );
+  }
+  // Used by both manual receipts and verified provider settlement, in the caller's transaction.
+  async receiveInTransaction(
+    tx: Prisma.TransactionClient,
+    data: z.infer<typeof receiptSchema>,
+    userId: string,
+    asaasPaymentId?: string,
+  ) {
+    this.user(userId);
+    receiptSchema.parse(data);
+    const account = await this.lockAccount(tx, data.receivableId, userId);
+    if (
+      !asaasPaymentId &&
+      (await tx.asaasCheckout.count({
+        where: {
+          saleId: account.saleId,
+          contractId: account.contractId,
+          status: { notIn: ["CANCELED", "EXPIRED", "REJECTED"] },
         },
-      });
-      return { saleId: account.saleId, leadId: account.sale.leadId };
+      }))
+    )
+      throw new FinanceError(
+        "CONFLICT",
+        "Esta conta possui cobrança Asaas. Concilie ou cancele o checkout antes de registrar um recebimento manual.",
+      );
+    const existing = await tx.receipt.findUnique({
+      where: { id: data.id },
+      include: { reversal: true },
     });
+    if (existing) {
+      if (
+        existing.receivableId !== account.id ||
+        !existing.amount.equals(data.amount) ||
+        existing.receivedOn.toISOString().slice(0, 10) !== data.receivedOn ||
+        existing.paymentMethod !== data.paymentMethod ||
+        existing.notes !== data.notes ||
+        existing.reversal
+      )
+        throw conflict();
+      return { saleId: account.saleId, leadId: account.sale.leadId };
+    }
+    const paid = await tx.receipt.aggregate({
+      where: { receivableId: account.id, reversal: null },
+      _sum: { amount: true },
+    });
+    const balance = account.amount.minus(paid._sum.amount ?? 0);
+    if (balance.lessThan(data.amount))
+      throw new FinanceError(
+        "CONFLICT",
+        "O valor ultrapassa o saldo disponível. Atualize a conta e revise o recebimento.",
+      );
+    await tx.receipt.create({
+      data: {
+        ...data,
+        amount: new Prisma.Decimal(data.amount),
+        receivedOn: date(data.receivedOn),
+        asaasPaymentId,
+      },
+    });
+    return { saleId: account.saleId, leadId: account.sale.leadId };
   }
   async reverse(input: unknown, userId: string) {
     this.user(userId);
@@ -249,6 +272,11 @@ export class FinanceService {
         },
       });
       if (!receipt) throw missing();
+      if (receipt.asaasPaymentId)
+        throw new FinanceError(
+          "INVALID",
+          "Solicite o estorno no Asaas e concilie a cobrança. O histórico será preservado.",
+        );
       const account = await this.lockAccount(tx, receipt.receivableId, userId);
       const existing = await tx.receiptReversal.findUnique({
         where: { receiptId: receipt.id },

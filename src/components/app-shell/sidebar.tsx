@@ -49,6 +49,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const compactOnMobile =
     pathname.startsWith("/financeiro") ||
+    pathname.startsWith("/configuracoes") ||
     pathname === "/prototipos" ||
     pathname === "/dashboard" ||
     pathname.startsWith("/leads/");

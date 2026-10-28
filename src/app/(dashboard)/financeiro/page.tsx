@@ -68,6 +68,12 @@ export default async function FinancePage({
         <p className="mt-2 text-sm text-secundary">
           Suas vendas e os valores efetivamente recebidos.
         </p>
+        <Link
+          href="/configuracoes#asaas"
+          className="mt-3 inline-flex min-h-9 items-center text-sm text-primary underline underline-offset-4"
+        >
+          Configurar pagamentos Asaas
+        </Link>
       </header>
       <FinanceTotals
         sold={data.sold}
