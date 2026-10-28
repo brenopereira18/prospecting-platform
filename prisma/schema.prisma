@@ -21,6 +21,7 @@ model User {
   proposals         CommercialProposal[]
   sales             Sale[]
   monthlySalesGoals MonthlySalesGoal[]
+  asaasPolicy       AsaasPolicy?
 
   @@map("users")
 }
@@ -316,6 +317,7 @@ model Sale {
   proposal           CommercialProposal  @relation(fields: [proposalId], references: [id], onDelete: Restrict)
   receivables        Receivable[]
   recurringContracts RecurringContract[]
+  asaasCheckouts     AsaasCheckout[]
 
   @@index([userId, soldOn, id])
   @@index([leadId])
@@ -369,23 +371,24 @@ enum RecurringServiceKind {
 
 // Ownership is inherited from Sale; historical conditions are append-only.
 model RecurringContract {
-  id            String                     @id @default(uuid())
-  saleId        String
-  kind          RecurringServiceKind
-  description   String                     @db.Text
-  monthlyAmount Decimal                    @db.Decimal(12, 2)
-  startsOn      DateTime                   @db.Date
-  dueDay        Int
-  paymentMethod ProposalPaymentMethod
-  notes         String                     @db.Text
-  status        RecurringContractStatus    @default(ATIVO)
-  revision      Int                        @default(0)
-  requestHash   String
-  createdAt     DateTime                   @default(now()) @db.Timestamptz(3)
-  updatedAt     DateTime                   @updatedAt @db.Timestamptz(3)
-  sale          Sale                       @relation(fields: [saleId], references: [id], onDelete: Restrict)
-  history       RecurringContractHistory[]
-  receivables   Receivable[]
+  id             String                     @id @default(uuid())
+  saleId         String
+  kind           RecurringServiceKind
+  description    String                     @db.Text
+  monthlyAmount  Decimal                    @db.Decimal(12, 2)
+  startsOn       DateTime                   @db.Date
+  dueDay         Int
+  paymentMethod  ProposalPaymentMethod
+  notes          String                     @db.Text
+  status         RecurringContractStatus    @default(ATIVO)
+  revision       Int                        @default(0)
+  requestHash    String
+  createdAt      DateTime                   @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime                   @updatedAt @db.Timestamptz(3)
+  sale           Sale                       @relation(fields: [saleId], references: [id], onDelete: Restrict)
+  history        RecurringContractHistory[]
+  receivables    Receivable[]
+  asaasCheckouts AsaasCheckout[]
 
   @@unique([id, saleId])
   @@index([saleId, status])
@@ -410,15 +413,17 @@ model RecurringContractHistory {
 }
 
 model Receipt {
-  id            String                @id @default(uuid())
-  receivableId  String
-  amount        Decimal               @db.Decimal(12, 2)
-  receivedOn    DateTime              @db.Date
-  paymentMethod ProposalPaymentMethod
-  notes         String                @db.Text
-  createdAt     DateTime              @default(now()) @db.Timestamptz(3)
-  receivable    Receivable            @relation(fields: [receivableId], references: [id], onDelete: Restrict)
-  reversal      ReceiptReversal?
+  id             String                @id @default(uuid())
+  receivableId   String
+  amount         Decimal               @db.Decimal(12, 2)
+  receivedOn     DateTime              @db.Date
+  paymentMethod  ProposalPaymentMethod
+  notes          String                @db.Text
+  createdAt      DateTime              @default(now()) @db.Timestamptz(3)
+  receivable     Receivable            @relation(fields: [receivableId], references: [id], onDelete: Restrict)
+  reversal       ReceiptReversal?
+  asaasPaymentId String?
+  asaasPayment   AsaasPayment?         @relation(fields: [asaasPaymentId], references: [id], onDelete: Restrict)
 
   @@index([receivableId, receivedOn])
   @@map("receipts")
@@ -433,4 +438,79 @@ model ReceiptReversal {
   receipt   Receipt  @relation(fields: [receiptId], references: [id], onDelete: Restrict)
 
   @@map("receipt_reversals")
+}
+
+// Integration metadata only. Receivable/Receipt remain the financial ledger.
+model AsaasPolicy {
+  userId    String   @id
+  rules     Json     @db.JsonB
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@map("asaas_policies")
+}
+
+model AsaasCheckout {
+  id                 String             @id @default(uuid())
+  saleId             String
+  contractId         String?
+  publicToken        String             @unique
+  providerId         String?            @unique
+  subscriptionId     String?            @unique
+  subscriptionStatus String?
+  status             String             @default("PREPARED")
+  amount             Decimal            @db.Decimal(12, 2)
+  terms              Json               @db.JsonB
+  acceptedAt         DateTime?          @db.Timestamptz(3)
+  requestedAt        DateTime?          @db.Timestamptz(3)
+  expiresAt          DateTime           @db.Timestamptz(3)
+  lastError          String?
+  createdAt          DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime           @updatedAt @db.Timestamptz(3)
+  sale               Sale               @relation(fields: [saleId], references: [id], onDelete: Restrict)
+  contract           RecurringContract? @relation(fields: [contractId], references: [id], onDelete: Restrict)
+  payments           AsaasPayment[]
+
+  @@index([saleId, createdAt])
+  @@index([contractId, status])
+  @@map("asaas_checkouts")
+}
+
+model AsaasPayment {
+  id                String        @id
+  checkoutId        String
+  subscriptionId    String?
+  installmentId     String?
+  installmentNumber Int?
+  status            String
+  billingType       String
+  grossAmount       Decimal       @db.Decimal(12, 2)
+  buyerCharges      Decimal?      @db.Decimal(12, 2)
+  providerFee       Decimal?      @db.Decimal(12, 2)
+  netAmount         Decimal?      @db.Decimal(12, 2)
+  dueOn             DateTime      @db.Date
+  receivedOn        DateTime?     @db.Date
+  invoiceUrl        String?
+  lastError         String?
+  updatedAt         DateTime      @updatedAt @db.Timestamptz(3)
+  checkout          AsaasCheckout @relation(fields: [checkoutId], references: [id], onDelete: Restrict)
+  receipts          Receipt[]
+
+  @@index([checkoutId, dueOn])
+  @@map("asaas_payments")
+}
+
+// Store only event/resource identifiers, never card/customer payloads.
+model AsaasEvent {
+  id                String    @id
+  event             String
+  resourceId        String
+  externalReference String?
+  processedAt       DateTime? @db.Timestamptz(3)
+  attempts          Int       @default(0)
+  error             String?
+  createdAt         DateTime  @default(now()) @db.Timestamptz(3)
+
+  @@index([processedAt, createdAt])
+  @@map("asaas_events")
 }

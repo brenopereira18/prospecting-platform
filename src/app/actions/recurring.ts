@@ -6,6 +6,8 @@ import { getCurrentUser } from "@/src/server/auth/current-user.service";
 import { FinanceError } from "@/src/server/finance/finance.service";
 import { RecurringService } from "@/src/server/finance/recurring.service";
 import type { ContractResult } from "@/src/server/finance/recurring.schema";
+import { asaasService } from "@/src/server/finance/asaas.runtime";
+import { AsaasError } from "@/src/server/finance/asaas.client";
 
 const service = new RecurringService(prisma);
 async function execute(
@@ -31,7 +33,7 @@ async function execute(
           error.issues.map((i) => [i.path.join("."), i.message]),
         ),
       };
-    if (error instanceof FinanceError)
+    if (error instanceof FinanceError || error instanceof AsaasError)
       return { success: false, error: error.message };
     console.error("Falha na operação de contrato recorrente.", error);
     return {
@@ -48,7 +50,21 @@ export async function updateContractAction(input: unknown) {
   return execute((user) => service.update(input, user));
 }
 export async function contractStatusAction(input: unknown) {
-  return execute((user) => service.changeStatus(input, user));
+  return execute(async (user) => {
+    const id = z.object({ id: z.uuid() }).parse(input).id;
+    const linked = await prisma.asaasCheckout.findFirst({
+      where: {
+        contractId: id,
+        status: { notIn: ["CANCELED", "EXPIRED", "REJECTED"] },
+        sale: { userId: user },
+      },
+    });
+    if (linked) {
+      await asaasService().changeContractStatus(input, user);
+      return { contractId: id };
+    }
+    return service.changeStatus(input, user);
+  });
 }
 export async function generateMonthlyAction(input: unknown) {
   return execute((user) => service.generate(input, user));

@@ -18,6 +18,7 @@ import { formatMoney } from "@/src/server/proposals/proposal.schema";
 import { statusLabels } from "@/src/server/finance/recurring.schema";
 import { financeButton } from "@/src/components/finance/finance-ui";
 import { ReceivableList } from "@/src/components/finance/receivable-card";
+import { AsaasPanel } from "@/src/components/finance/asaas-panel";
 export default async function SalePage({
   params,
 }: {
@@ -84,6 +85,7 @@ export default async function SalePage({
           />
         </div>
       </section>
+      <AsaasPanel saleId={id} userId={user.id} />
       <section className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-lg font-semibold">Contratos recorrentes</h2>
