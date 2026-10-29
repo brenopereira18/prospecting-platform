@@ -7,6 +7,7 @@ interface CitySelectProps {
   cities: CityDTO[];
   selectedCity: CityDTO | null;
   disabled: boolean;
+  loading?: boolean;
   onCityChange: (city: CityDTO) => void;
 }
 
@@ -14,6 +15,7 @@ export function CitySelect({
   cities,
   selectedCity,
   disabled,
+  loading = false,
   onCityChange,
 }: CitySelectProps) {
   const [open, setOpen] = useState(false);
@@ -46,15 +48,23 @@ export function CitySelect({
       <button
         type="button"
         disabled={disabled}
+        aria-busy={loading}
+        aria-label="Cidade"
         onClick={() => setOpen((current) => !current)}
         className="flex h-9 w-full items-center justify-between rounded-md border border-sidebar-hover bg-transparent px-3 py-2 text-sm shadow-sm transition-colors hover:bg-sidebar-hover disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
       >
-        <span>{selectedCity ? selectedCity.name : "Selecione"}</span>
+        <span>
+          {loading
+            ? "Carregando…"
+            : selectedCity
+              ? selectedCity.name
+              : "Selecione"}
+        </span>
 
         <span className="text-secundary">⌄</span>
       </button>
 
-      {open && (
+      {open && !disabled && (
         <div className="absolute z-10 mt-1 max-h-60 w-full overflow-y-auto rounded-md border border-sidebar-hover bg-terciary py-1 shadow-lg custom-scrollbar">
           {cities.map((city) => (
             <button
