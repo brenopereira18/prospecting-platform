@@ -25,3 +25,17 @@ contatos ou mensagens arbitrárias de erros externos. A chamada tem um limite de
 
 O timeout original não prova bloqueio do IBGE ou problema de uma região
 específica. Esse diagnóstico ainda exige evidências do ambiente publicado.
+
+Temporariamente, uma falha na ação de municípios agenda um diagnóstico com
+`after()`, sem atrasar a resposta ao usuário. Procure `[location:ibge:diagnostic]`
+nos logs após reproduzir o problema no deploy. Duas consultas HTTPS em paralelo,
+limitadas a 3 segundos cada, testam IPv4 e IPv6 para o mesmo endpoint do IBGE.
+O resultado informa a última etapa atingida (`dns`, `tcp`, `tls`, `http` ou
+`response`), endereço público do IBGE, tempos acumulados, status e código do erro.
+`ENOTFOUND` apenas em IPv6 pode significar que não há registro IPv6 para o host;
+isso sozinho não prova falha na conexão padrão. Se ambas as famílias falharem,
+não é correto concluir que forçar IPv4 resolveria. Um HTTP 403/429 indica que
+houve conexão e resposta; timeout em TCP ainda não prova bloqueio deliberado.
+Não há modificação de DNS global, família de IP, região ou fonte de dados.
+As sondagens ficam limitadas a uma execução a cada 5 minutos por instância ativa.
+Remova essa instrumentação temporária após fechar o diagnóstico.
