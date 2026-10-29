@@ -4,6 +4,8 @@ import { LocationService } from "../../../server/location/location.service";
 import { CategoryService } from "../../../server/categories/category.service";
 import { DiscoveryFilters } from "@/src/components/discovery/discovery-filter";
 
+export const dynamic = "force-dynamic";
+
 const categoryService = new CategoryService();
 const locationService = new LocationService();
 

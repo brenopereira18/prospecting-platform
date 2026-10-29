@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { Search } from "lucide-react";
 
@@ -34,15 +34,25 @@ export function DiscoveryFilters({
   );
   const [places, setPlaces] = useState<EstablishmentCandidateDTO[]>([]);
   const [cities, setCities] = useState<CityDTO[]>([]);
+  const [citiesLoading, setCitiesLoading] = useState(false);
+  const [citiesError, setCitiesError] = useState(false);
+  const citiesRequest = useRef(0);
 
   async function handleStateChange(state: StateDTO) {
+    const requestId = ++citiesRequest.current;
     setSelectedState(state);
     setSelectedCity(null);
     setCities([]);
-
-    const cities = await getCitiesByState(state.id);
-
-    setCities(cities);
+    setCitiesLoading(true);
+    setCitiesError(false);
+    try {
+      const cities = await getCitiesByState(state.id);
+      if (requestId === citiesRequest.current) setCities(cities);
+    } catch {
+      if (requestId === citiesRequest.current) setCitiesError(true);
+    } finally {
+      if (requestId === citiesRequest.current) setCitiesLoading(false);
+    }
   }
 
   async function handleSearch() {
@@ -97,9 +107,24 @@ export function DiscoveryFilters({
             <CitySelect
               cities={cities}
               selectedCity={selectedCity}
-              disabled={!selectedState}
+              disabled={!selectedState || citiesLoading || citiesError}
+              loading={citiesLoading}
               onCityChange={setSelectedCity}
             />
+            {citiesError && (
+              <div className="space-y-1 text-xs" role="alert">
+                <p>Não foi possível carregar as cidades.</p>
+                <button
+                  type="button"
+                  className="rounded text-primary underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-primary"
+                  onClick={() =>
+                    selectedState && handleStateChange(selectedState)
+                  }
+                >
+                  Tentar novamente
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
