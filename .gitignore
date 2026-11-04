@@ -45,3 +45,7 @@ next-env.d.ts
 
 .codegraph
 .agents
+# Local catalog publication / recovery artifacts
+/src/server/location/.catalog-update.lock/
+/src/server/location/.catalog-stage-*/
+/src/server/location/catalog.previous.json

@@ -1,6 +1,6 @@
 import { get, type RequestOptions } from "node:https";
 import type { IncomingMessage, ClientRequest } from "node:http";
-import states from "./states.json";
+import { states } from "./catalog.json";
 
 type RequestFactory = (
   url: URL,
