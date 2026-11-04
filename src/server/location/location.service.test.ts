@@ -1,116 +1,115 @@
 import assert from "node:assert/strict";
-import { test, mock } from "node:test";
-import { fetchCitiesByState, LocationService } from "./location.service";
+import { createHash } from "node:crypto";
+import { mock, test } from "node:test";
+import catalog from "./catalog.json";
+const source = catalog.source;
+import { LocationService } from "./location.service";
+import { getCitiesByState } from "../../app/actions/location";
 
-test("estados oficiais continuam disponíveis com a rede indisponível", async () => {
+const fingerprint = (rows: { id: number }[]) =>
+  createHash("sha256")
+    .update(JSON.stringify([...rows].sort((a, b) => a.id - b.id)))
+    .digest("hex");
+const compare = (
+  a: { id: number; name: string },
+  b: { id: number; name: string },
+) => a.name.localeCompare(b.name, "pt-BR") || a.id - b.id;
+
+test("catálogo cobre integralmente as respostas oficiais nacional e por UF", () => {
+  assert.equal(catalog.states.length, 27);
+  assert.equal(source.stateCount, 27);
+  assert.equal(catalog.cities.length, source.cityCount);
+  assert.equal(source.cityCount, 5571);
+  assert.equal(fingerprint(catalog.states), source.statesSha256);
+  assert.equal(fingerprint(catalog.cities), source.citiesSha256);
+  assert.equal(source.coverage.length, 27);
+  assert.equal(source.sources.length, 29);
+  assert.equal(
+    source.sources.find((row) => row.url.includes("/localidades/municipios?"))
+      ?.count,
+    catalog.cities.length,
+  );
+  for (const state of catalog.states) {
+    const coverage = source.coverage.find((row) => row.stateId === state.id);
+    assert.ok(coverage);
+    const cities = catalog.cities.filter((city) => city.stateId === state.id);
+    assert.equal(cities.length, coverage.count);
+    assert.equal(fingerprint(cities), coverage.sha256);
+    assert.equal(
+      source.sources.find((row) =>
+        row.url.includes(`/estados/${state.id}/municipios?`),
+      )?.count,
+      cities.length,
+    );
+  }
+});
+
+test("códigos, nomes e vínculos são íntegros e únicos", () => {
+  assert.equal(new Set(catalog.states.map((row) => row.id)).size, 27);
+  assert.equal(new Set(catalog.states.map((row) => row.abbreviation)).size, 27);
+  assert.equal(
+    new Set(catalog.cities.map((row) => row.id)).size,
+    catalog.cities.length,
+  );
+  for (const state of catalog.states)
+    assert.match(state.abbreviation, /^[A-Z]{2}$/);
+  for (const row of [...catalog.states, ...catalog.cities]) {
+    assert.ok(Number.isSafeInteger(row.id) && row.id > 0);
+    assert.equal(row.name, row.name.trim());
+    assert.ok(row.name.length > 0 && !row.name.includes("\uFFFD"));
+  }
+  for (const city of catalog.cities) {
+    assert.ok(catalog.states.some((state) => state.id === city.stateId));
+    assert.equal(Math.floor(city.id / 100000), city.stateId);
+    assert.equal(String(city.id).length, 7);
+  }
+  assert.deepEqual(catalog.states, [...catalog.states].sort(compare));
+});
+
+test("serviço e Server Action retornam todas as UFs e cidades sem acesso à rede", async () => {
   const fetchMock = mock.method(globalThis, "fetch", async () => {
     throw new Error("offline");
   });
   try {
     const service = new LocationService();
-    const states = await service.listStates();
-    assert.equal(states.length, 27);
-    assert.equal(new Set(states.map((state) => state.id)).size, 27);
-    assert.deepEqual(
-      states.find((state) => state.id === 31),
-      {
-        id: 31,
-        name: "Minas Gerais",
-        abbreviation: "MG",
-      },
-    );
-    assert.deepEqual(
-      states.find((state) => state.id === 53),
-      {
-        id: 53,
-        name: "Distrito Federal",
-        abbreviation: "DF",
-      },
-    );
-    states[0].name = "alterado";
-    assert.notEqual((await service.listStates())[0].name, "alterado");
+    for (const state of await service.listStates()) {
+      const expected = catalog.cities
+        .filter((city) => city.stateId === state.id)
+        .map(({ id, name }) => ({ id, name }));
+      const actual = await getCitiesByState(state.id);
+      assert.deepEqual(actual, expected);
+      assert.deepEqual(actual, [...actual].sort(compare));
+    }
     assert.equal(fetchMock.mock.callCount(), 0);
+    assert.ok(
+      (await getCitiesByState(31)).some(
+        (city) => city.name === "Uberlândia" && city.id === 3170206,
+      ),
+    );
+    assert.deepEqual(await getCitiesByState(53), [
+      { id: 5300108, name: "Brasília" },
+    ]);
   } finally {
     fetchMock.mock.restore();
   }
 });
 
-test("municípios preservam códigos oficiais, ordenação e consulta por UF", async () => {
-  const transport = mock.fn<typeof fetch>(async (url, init) => {
-    assert.equal(
-      url,
-      "https://servicodados.ibge.gov.br/api/v1/localidades/estados/31/municipios?orderBy=nome",
-    );
-    assert.ok(init?.signal instanceof AbortSignal);
-    return Response.json([
-      { id: 3170206, nome: "Uberlândia" },
-      { id: 3106200, nome: "Belo Horizonte" },
-    ]);
-  });
-  const service = new LocationService((id) =>
-    fetchCitiesByState(id, transport),
-  );
-  assert.deepEqual(await service.listCitiesByState(31), [
-    { id: 3106200, name: "Belo Horizonte" },
-    { id: 3170206, name: "Uberlândia" },
-  ]);
-  assert.equal(transport.mock.callCount(), 1);
+test("UF inválida ou sem resultados retorna lista vazia", async () => {
+  for (const id of [NaN, Infinity, 0, -1, 99, 31.5])
+    assert.deepEqual(await getCitiesByState(id), []);
 });
 
-test("UF inválida não inicia consulta externa", async () => {
-  const loader = mock.fn(async () => []);
-  const service = new LocationService(loader);
-  for (const id of [NaN, Infinity, 0, -1, 99, 31.5]) {
-    assert.deepEqual(await service.listCitiesByState(id), []);
-  }
-  assert.equal(loader.mock.callCount(), 0);
+test("trocar UF não mantém cidades anteriores e consumidores não alteram o catálogo", async () => {
+  const service = new LocationService();
+  const states = await service.listStates();
+  const originalName = states[0].name;
+  states[0].name = "alterado";
+  assert.equal((await service.listStates())[0].name, originalName);
+  const cities = await getCitiesByState(33);
+  const originalCity = { ...cities[0] };
+  cities[0].name = "alterado";
+  cities.pop();
+  assert.deepEqual((await getCitiesByState(33))[0], originalCity);
+  const next = await getCitiesByState(35);
+  assert.ok(next.every((city) => Math.floor(city.id / 100000) === 35));
 });
-
-const failures: [string, typeof fetch][] = [
-  [
-    "timeout",
-    async () => {
-      throw new DOMException("timeout", "TimeoutError");
-    },
-  ],
-  [
-    "conexão",
-    async () => {
-      throw new TypeError("segredo não deve aparecer", {
-        cause: { code: "UND_ERR_CONNECT_TIMEOUT" },
-      });
-    },
-  ],
-  ["HTTP 503", async () => new Response("payload privado", { status: 503 })],
-  ["JSON inválido", async () => new Response("não é JSON")],
-  ["lista vazia", async () => Response.json([])],
-  [
-    "formato inválido",
-    async () => Response.json([{ id: "3106200", nome: "BH" }]),
-  ],
-  [
-    "município de outra UF",
-    async () => Response.json([{ id: 3550308, nome: "São Paulo" }]),
-  ],
-];
-
-for (const [name, transport] of failures) {
-  test(`falha de ${name} gera erro tratável e log seguro`, async () => {
-    const warning = mock.method(console, "warn", () => {});
-    try {
-      await assert.rejects(
-        fetchCitiesByState(31, transport),
-        /Não foi possível carregar os municípios/,
-      );
-      assert.equal(warning.mock.callCount(), 1);
-      const output = JSON.stringify(warning.mock.calls[0].arguments);
-      assert.ok(output.includes('"stateId":31'));
-      assert.ok(!output.includes("segredo"));
-      assert.ok(!output.includes("payload privado"));
-      if (name === "conexão")
-        assert.ok(output.includes("UND_ERR_CONNECT_TIMEOUT"));
-    } finally {
-      warning.mock.restore();
-    }
-  });
-}
