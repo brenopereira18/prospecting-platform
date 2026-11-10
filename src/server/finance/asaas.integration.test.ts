@@ -454,21 +454,41 @@ test(
       await t.test(
         "timeout is retained as UNKNOWN, never automatically reposted",
         async () => {
-          await service.cancel(checkout.id, user);
-          failCreate = true;
-          const c = await service.prepare({ saleId: f.sale.id }, user);
-          const before = requests.filter((r) => r.path === "/checkouts").length;
-          await assert.rejects(service.start(c.publicToken, false));
-          assert.equal(
-            (await db.asaasCheckout.findUniqueOrThrow({ where: { id: c.id } }))
-              .status,
-            "UNKNOWN",
-          );
-          await assert.rejects(service.start(c.publicToken, false));
-          assert.equal(
-            requests.filter((r) => r.path === "/checkouts").length,
-            before + 1,
-          );
+          // An already settled sale must not be canceled/reused for this test.
+          const isolated = await recurringFixture(db);
+          const isolatedService = new AsaasService(db, api, {
+            ...config,
+            ownerUserId: isolated.users[0],
+          });
+          try {
+            failCreate = true;
+            const c = await isolatedService.prepare(
+              { saleId: isolated.sale.id },
+              isolated.users[0],
+            );
+            const before = requests.filter(
+              (r) => r.path === "/checkouts",
+            ).length;
+            await assert.rejects(isolatedService.start(c.publicToken, false));
+            assert.equal(
+              (
+                await db.asaasCheckout.findUniqueOrThrow({
+                  where: { id: c.id },
+                })
+              ).status,
+              "UNKNOWN",
+            );
+            await assert.rejects(isolatedService.start(c.publicToken, false));
+            assert.equal(
+              requests.filter((r) => r.path === "/checkouts").length,
+              before + 1,
+            );
+          } finally {
+            await db.asaasCheckout.deleteMany({
+              where: { saleId: isolated.sale.id },
+            });
+            await isolated.cleanup();
+          }
         },
       );
     } finally {

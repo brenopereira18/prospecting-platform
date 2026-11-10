@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { AsaasClient, AsaasError, hostedCheckoutUrl } from "./asaas.client";
+import { checkoutState } from "./asaas-checkout-state";
 import {
   asaasPolicySchema,
   defaultAsaasPolicy,
@@ -140,4 +141,119 @@ test("reconciliation reads all pages without leaking another checkout filter", a
     (await client.payments({ checkoutSession: "session_1" })).length,
     2,
   );
+});
+
+test("checkout controls distinguish active, expired, canceled and paid links", () => {
+  const now = Date.parse("2026-11-10T12:00:00Z");
+  const future = new Date(now + 60000),
+    past = new Date(now - 1);
+  for (const status of ["PREPARED", "ACTIVE"]) {
+    assert.equal(checkoutState(status, future, now).canOpen, true);
+    assert.equal(checkoutState(status, future, now).canCancel, true);
+    assert.equal(checkoutState(status, future, now).canPrepare, false);
+    assert.equal(checkoutState(status, past, now).canOpen, false);
+    assert.equal(checkoutState(status, past, now).canCancel, false);
+    assert.equal(checkoutState(status, past, now).canPrepare, true);
+  }
+  for (const status of ["EXPIRED", "CANCELED"]) {
+    const state = checkoutState(status, future, now);
+    assert.equal(state.canOpen, false);
+    assert.equal(state.canCancel, false);
+    assert.equal(state.canPrepare, true);
+  }
+  assert.match(checkoutState("EXPIRED").message, /prazo/);
+  assert.match(checkoutState("CANCELED").message, /cancelado/);
+  for (const status of ["PAID", "UNKNOWN", "CREATING", "CANCELING"]) {
+    const state = checkoutState(status, past, now);
+    assert.equal(state.canOpen, false);
+    assert.equal(state.canCancel, false);
+    assert.equal(state.canPrepare, false);
+  }
+  assert.match(checkoutState("PAID", past, now).message, /já foi pago/);
+});
+
+test("HTTP 400 preserves provider codes and descriptions without credentials", async () => {
+  const key = "private-test-api-key";
+  const client = new AsaasClient(key, async () =>
+    Response.json(
+      {
+        errors: [
+          {
+            code: "invalid_action",
+            description: `Checkout expirado. access_token=${key}`,
+          },
+        ],
+      },
+      { status: 400 },
+    ),
+  );
+  await assert.rejects(
+    client.request("/checkouts/test/cancel", "POST"),
+    (error: unknown) => {
+      assert.ok(error instanceof AsaasError);
+      assert.equal(error.status, 400);
+      assert.equal(error.uncertain, false);
+      assert.equal(error.providerErrors[0].code, "invalid_action");
+      assert.match(error.providerErrors[0].description!, /Checkout expirado/);
+      assert.match(error.message, /invalid_action/);
+      assert.equal(JSON.stringify(error).includes(key), false);
+      assert.equal(error.message.includes(key), false);
+      return true;
+    },
+  );
+});
+
+test("provider diagnostics redact headers, bearer/basic, quoted secrets and credential URLs", async (t) => {
+  const secret = "fictional-sensitive-value";
+  const samples = [
+    `Authorization: Bearer ${secret}`,
+    `authorization=Bearer ${secret}`,
+    `Bearer ${secret}`,
+    `Authorization: Basic ${secret}`,
+    `Proxy-Authorization: Bearer ${secret}`,
+    `X-API-Key: ${secret}`,
+    `api_key=${secret}`,
+    `apiKey='${secret} with spaces'`,
+    `access_token="${secret} with spaces"`,
+    `authToken: ${secret}`,
+    `password: '${secret} with spaces'`,
+    `{"Authorization":"Bearer ${secret}"}`,
+    `{"token":"${secret} with spaces"}`,
+    `https://user:${secret}@example.invalid/path?token=${secret}`,
+    `postgresql://user:${secret}@example.invalid/database`,
+    `//user:${secret}@example.invalid/path`,
+  ];
+  for (const [index, sample] of samples.entries()) {
+    await t.test(`format ${index + 1}`, async () => {
+      const client = new AsaasClient("different-test-api-key", async () =>
+        Response.json(
+          {
+            errors: [
+              {
+                code: "invalid_action",
+                description: `Checkout expirado. ${sample}`,
+              },
+            ],
+          },
+          { status: 400 },
+        ),
+      );
+      await assert.rejects(
+        client.request("/checkouts/test/cancel", "POST"),
+        (error: unknown) => {
+          assert.ok(error instanceof AsaasError);
+          assert.equal(error.status, 400);
+          assert.equal(error.providerErrors[0].code, "invalid_action");
+          assert.match(error.message, /Checkout expirado/);
+          assert.equal(error.message.includes(secret), false);
+          assert.equal(
+            JSON.stringify(error.providerErrors).includes(secret),
+            false,
+          );
+          assert.equal(error.message.includes("with spaces"), false);
+          return true;
+        },
+      );
+    });
+  }
 });

@@ -65,6 +65,39 @@ No Sandbox:
 
 ## Persistência, conciliação e recuperação
 
+### Checkouts expirados
+
+- O prazo do link é considerado na página pública e nos controles do prestador. Um link vencido não oferece cancelamento nem pagamento; a preparação de outro link é uma ação explícita e preserva o registro anterior.
+- `CHECKOUT_EXPIRED` encerra o checkout local. Eventos duplicados usam a mesma caixa de entrada idempotente; eventos atrasados de expiração/cancelamento não rebaixam `PAID`, e `CHECKOUT_CREATED` atrasado não reabre estados encerrados.
+- A referência atual da API documenta criação e cancelamento de checkout, não um `GET /checkouts/{id}`. A conciliação usa a consulta documentada de cobranças por `checkoutSession`. Um `ACTIVE` com o prazo configurado encerrado só é marcado `EXPIRED` após essa consulta terminar com sucesso e sem cobranças; não se trata de uma leitura direta do status remoto. `UNKNOWN`, `CREATING` e `CANCELING` não são liberados pelo relógio.
+- Antes de substituir uma tentativa encerrada, o serviço verifica suas cobranças remotas e, dentro da transação, pagamentos locais, eventos `CHECKOUT_PAID`, assinaturas e checkouts abertos. Cobranças ainda pendentes/autorizadas também bloqueiam a reemissão para evitar pagamentos concorrentes. Uma indisponibilidade da consulta impede a criação, sem novo POST automático.
+- Um checkout `PAID` é preservado e não pode ser cancelado por esta ação nem substituído por outro. `CONFIRMED` continua sem gerar recebimento; somente o fluxo financeiro existente realiza as baixas.
+- Erros do cliente preservam status HTTP e `providerErrors` com `code`/`description` sanitizados. A resposta antiga do HTTP 400 não pode ser reconstruída a partir da mensagem genérica armazenada anteriormente. Não repetir cancelamentos reais apenas para obter esse diagnóstico.
+
+### Pagamentos tardios e recuperação de eventos
+
+Migration `20261110193000_asaas_checkout_lifecycle_recovery`:
+
+- Recria os dois índices parciais de exclusividade numa transação com bloqueio de escrita. `PAID` passa a ser histórico e não ocupa a posição de checkout disponível. Checkouts disponíveis/em processamento continuam exclusivos por venda ou contrato.
+- Acrescenta `userId`, `nextAttemptAt` e `failedAt` ao diário de eventos. O proprietário de eventos antigos só é preenchido quando referências persistidas demonstram um único usuário; registros desconhecidos permanecem sem proprietário.
+- Não altera valores, recebimentos, estornos nem o documento de propostas/vendas. Aplicar antes de executar o código novo; não foi aplicada em produção.
+
+Um pagamento tardio é registrado mesmo se houver substituto. Preparação, reutilização de checkout ativo e entrega da URL após criação remota verificam novamente pagamentos e notificações pendentes. Eventos conhecidos, criação e entrega usam o mesmo bloqueio de venda. A página pública e o painel não oferecem encaminhamento quando há conflito. A aplicação não cancela automaticamente um link externo que o cliente já tenha recebido: nesse caso o proprietário deve revisar e cancelar o substituto disponível no Asaas.
+
+Eventos financeiros sem associação pertencentes ao proprietário atual bloqueiam conservadoramente novos encaminhamentos enquanto não forem esclarecidos; atingir o limite de tentativas não libera uma possível cobrança.
+
+O processamento usa reserva condicional por evento por três minutos e no máximo oito tentativas automáticas, com intervalos de 1 min, 5 min, 15 min, 1 h, 4 h, 12 h e 24 h. Não há cron/worker: um novo recebimento do evento ou **Reprocessar eventos** tenta os registros elegíveis. Duplicatas durante a reserva/intervalo não consomem tentativas.
+
+Uma falha ao associar o recurso mantém `processedAt` vazio. Ao esgotar as tentativas, `failedAt` exige revisão; **Eventos aguardando revisão → Reavaliar eventos com falha**, no painel da venda/contrato, autoriza uma tentativa adicional por registro (até 25 por ação). O contador não é zerado e não há repetição automática ilimitada. Um reenvio corrigido pode acrescentar associação ao mesmo ID. Eventos legados sem proprietário, antes marcados processados indevidamente, só são reabertos após associação verificável ao usuário; eventos já atribuídos e processados não são reabertos por duplicatas.
+
+As verificações locais não constituem uma transação distribuída com o Asaas: não é possível revogar um redirecionamento já entregue nem detectar instantaneamente uma informação ainda não disponibilizada pela API/webhook. Falhas de consulta impedem novas URLs; notificações tardias preservam o pagamento e bloqueiam as tentativas substitutas conhecidas.
+
+Teste específico (PostgreSQL local/descartável e Asaas simulado):
+
+```bash
+FINANCE_DATABASE_TEST=1 pnpm exec tsx --test src/server/finance/asaas-checkout.integration.test.ts src/server/finance/asaas.integration.test.ts
+```
+
 `AsaasPolicy`, `AsaasCheckout`, `AsaasPayment`, `AsaasEvent` armazenam apenas configuração, correlação e metadados. `Sale`, `Receivable`, `Receipt` e `ReceiptReversal` continuam sendo o financeiro. Não são armazenados cartão, token de cartão, payload completo com dados pessoais, ou segredo de API.
 
 - Webhook exige `asaas-access-token`, comparado em tempo constante, e limita corpo a 128 KiB. Evento é gravado antes de responder; `after()` processa após a resposta. Falhas ficam persistidas e podem ser reprocessadas explicitamente; não há worker/cron ou garantia de execução contínua após encerramento do processo.

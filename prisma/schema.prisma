@@ -22,6 +22,7 @@ model User {
   sales             Sale[]
   monthlySalesGoals MonthlySalesGoal[]
   asaasPolicy       AsaasPolicy?
+  asaasEvents       AsaasEvent[]
 
   @@map("users")
 }
@@ -503,14 +504,19 @@ model AsaasPayment {
 // Store only event/resource identifiers, never card/customer payloads.
 model AsaasEvent {
   id                String    @id
+  userId            String?
   event             String
   resourceId        String
   externalReference String?
   processedAt       DateTime? @db.Timestamptz(3)
+  nextAttemptAt     DateTime? @db.Timestamptz(3)
+  failedAt          DateTime? @db.Timestamptz(3)
   attempts          Int       @default(0)
   error             String?
   createdAt         DateTime  @default(now()) @db.Timestamptz(3)
+  user              User?     @relation(fields: [userId], references: [id], onDelete: Restrict)
 
   @@index([processedAt, createdAt])
+  @@index([userId, processedAt, failedAt, nextAttemptAt])
   @@map("asaas_events")
 }

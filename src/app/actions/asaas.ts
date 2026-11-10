@@ -41,12 +41,15 @@ export async function cancelAsaasAction(id: string) {
 export async function asaasContractStatusAction(input: unknown) {
   return execute((user) => asaasService().changeContractStatus(input, user));
 }
-export async function retryAsaasEventsAction() {
+export async function retryAsaasEventsAction(retryFailed = false) {
   return execute(async (user) => {
-    const r = await asaasService().retryEvents(user);
-    if (r.pending)
+    const r = await asaasService().retryEvents(
+      user,
+      z.boolean().parse(retryFailed),
+    );
+    if (r.pending || r.failed)
       throw new AsaasError(
-        `${r.processed} eventos conciliados; ${r.pending} ainda exigem revisão.`,
+        `${r.processed} eventos conciliados; ${r.pending} aguardam processamento ou nova tentativa; ${r.failed} exigem revisão manual.`,
       );
   });
 }

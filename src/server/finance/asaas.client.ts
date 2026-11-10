@@ -4,6 +4,11 @@ export class AsaasError extends Error {
   constructor(
     message: string,
     public readonly uncertain = false,
+    public readonly status?: number,
+    public readonly providerErrors: readonly {
+      code?: string;
+      description?: string;
+    }[] = [],
   ) {
     super(message);
   }
@@ -83,15 +88,46 @@ export class AsaasClient {
       const details = (await response.json().catch(() => null)) as {
         errors?: { code?: string; description?: string }[];
       } | null;
-      const errors = details?.errors ?? [];
+      // Keep useful provider diagnostics, never headers, payloads or credentials.
+      const clean = (value: unknown) => {
+        if (typeof value !== "string") return undefined;
+        const redacted = this.key
+          ? value.replaceAll(this.key, "[redigido]")
+          : value;
+        return redacted
+          .replace(/(?:\b[a-z][a-z0-9+.-]*:)?\/\/[^\s"'<>]+/gi, "[URL omitida]")
+          .replace(/\b(Bearer|Basic)\s+[^\s,;"'<>]+/gi, "$1 [redigido]")
+          .replace(
+            /(["']?(?:authorization|proxy-authorization|x-api-key|access[_-]?token|auth[_-]?token|api[_ -]?key|token|password|senha)["']?\s*[:=]\s*)(?:"[^"]*"|'[^']*'|(?:Bearer|Basic)\s+\S+|[^\s,;}]+)/gi,
+            "$1[redigido]",
+          )
+          .replace(/[\u0000-\u001f\u007f]/g, " ")
+          .slice(0, 500);
+      };
+      const errors = Array.isArray(details?.errors)
+        ? details.errors.slice(0, 5).map((error) => ({
+            code: clean(error?.code),
+            description: clean(error?.description),
+          }))
+        : [];
+      const reason = errors
+        .map((e) =>
+          [e.code && `[${e.code}]`, e.description].filter(Boolean).join(" "),
+        )
+        .filter(Boolean)
+        .join("; ");
       const message = errors.some((e) => e.description?.includes("chave Pix"))
         ? "Cadastre uma chave Pix no painel Sandbox do Asaas antes de preparar este checkout."
         : errors.some((e) => e.code === "invalid_environment")
           ? "A chave configurada não pertence ao Sandbox do Asaas."
-          : `Asaas retornou HTTP ${response.status}. Revise a configuração ou tente conciliar.`;
+          : response.status === 400 && reason
+            ? `O Asaas recusou a operação (HTTP 400): ${reason}`
+            : `Asaas retornou HTTP ${response.status}. A operação não foi confirmada; tente conciliar.`;
       throw new AsaasError(
         message,
         response.status >= 500 || response.status === 429,
+        response.status,
+        errors,
       );
     }
     try {
