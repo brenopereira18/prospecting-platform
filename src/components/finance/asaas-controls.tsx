@@ -17,6 +17,7 @@ import {
   FinanceField,
 } from "./finance-ui";
 import type { AsaasPolicyInput } from "@/src/server/finance/asaas.schema";
+import { checkoutState } from "@/src/server/finance/asaas-checkout-state";
 
 type Result = { success: boolean; error: string };
 function useOperation() {
@@ -48,6 +49,9 @@ export function CheckoutControls({
   status,
   subscriptionId,
   revision,
+  expiresAt,
+  blockedReason,
+  failedEvents = 0,
 }: {
   saleId: string;
   contractId?: string;
@@ -55,16 +59,18 @@ export function CheckoutControls({
   status?: string;
   subscriptionId?: string | null;
   revision?: number;
+  expiresAt?: string;
+  blockedReason?: string | null;
+  failedEvents?: number;
 }) {
   const { busy, run, feedback } = useOperation();
   const [confirm, setConfirm] = useState(false);
   const [reason, setReason] = useState("");
-  const active =
-    checkoutId && !["CANCELED", "EXPIRED", "REJECTED"].includes(status ?? "");
+  const state = checkoutState(status, expiresAt);
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap gap-2">
-        {!active && (
+        {state.canPrepare && !subscriptionId && !blockedReason && (
           <button
             disabled={busy}
             className={financePrimary}
@@ -80,8 +86,12 @@ export function CheckoutControls({
             {busy
               ? "Preparando…"
               : contractId
-                ? "Preparar contratação mensal"
-                : "Preparar checkout"}
+                ? checkoutId
+                  ? "Preparar nova contratação mensal"
+                  : "Preparar contratação mensal"
+                : checkoutId
+                  ? "Preparar novo checkout"
+                  : "Preparar checkout"}
           </button>
         )}
         {checkoutId && (
@@ -93,7 +103,7 @@ export function CheckoutControls({
             Conciliar
           </button>
         )}
-        {active && (
+        {(state.canCancel || subscriptionId) && (
           <button
             disabled={busy}
             className={financeButton}
@@ -110,6 +120,26 @@ export function CheckoutControls({
           Reprocessar eventos
         </button>
       </div>
+      {failedEvents > 0 && (
+        <details className="text-sm text-secundary">
+          <summary className="cursor-pointer">
+            Eventos aguardando revisão ({failedEvents})
+          </summary>
+          <p className="my-2">
+            O limite automático de tentativas foi atingido. Revise a associação
+            no Asaas antes de tentar novamente. O histórico financeiro será
+            preservado.
+          </p>
+          <button
+            type="button"
+            disabled={busy}
+            className={financeButton}
+            onClick={() => run(() => retryAsaasEventsAction(true))}
+          >
+            Reavaliar eventos com falha
+          </button>
+        </details>
+      )}
       {confirm && (
         <form
           className="space-y-3 rounded-lg border border-sidebar-hover p-4"

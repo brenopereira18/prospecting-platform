@@ -26,6 +26,7 @@ test(
       secret = randomUUID();
     const origin = "http://localhost:3105";
     const eventId = `evt_${randomUUID()}`;
+    const failedEventId = `evt_${randomUUID()}`;
     // A dedicated server with a fake provider key: this test cannot issue external charges.
     const server = spawn(
       process.execPath,
@@ -291,6 +292,141 @@ test(
         }),
         0,
       );
+      // Only this disposable fixture changes; no real provider request is made.
+      const messages: Record<string, string> = {
+        EXPIRED: "O prazo deste checkout terminou.",
+        CANCELED: "Este checkout foi cancelado.",
+        PAID: "Este checkout já foi pago.",
+      };
+      for (const status of ["ACTIVE", "EXPIRED", "CANCELED", "PAID"]) {
+        await db.asaasCheckout.update({
+          where: { id: checkout.id },
+          data: { status, expiresAt: new Date(Date.now() + 3600000) },
+        });
+        for (const width of [1440, 390]) {
+          await page.setViewportSize({ width, height: 900 });
+          await page.goto(`${origin}/financeiro/vendas/${fixture.sale.id}`);
+          assert.equal(
+            await page
+              .getByRole("link", {
+                name: "Abrir link de pagamento",
+                exact: true,
+              })
+              .count(),
+            status === "ACTIVE" ? 1 : 0,
+          );
+          assert.equal(
+            await page
+              .getByRole("button", { name: "Cancelar checkout", exact: true })
+              .count(),
+            status === "ACTIVE" ? 1 : 0,
+          );
+          const prepare = page.getByRole("button", {
+            name: "Preparar novo checkout",
+            exact: true,
+          });
+          assert.equal(
+            await prepare.count(),
+            ["EXPIRED", "CANCELED"].includes(status) ? 1 : 0,
+          );
+          if (await prepare.count()) {
+            await prepare.focus();
+            assert.equal(
+              await prepare.evaluate((el) => el === document.activeElement),
+              true,
+            );
+          }
+          assert.ok(
+            await page.evaluate(
+              () => document.documentElement.scrollWidth <= innerWidth,
+            ),
+          );
+        }
+        await publicPage.goto(`${origin}/pagamento/${checkout.publicToken}`);
+        if (status === "ACTIVE") {
+          assert.equal(
+            await publicPage
+              .getByRole("button", { name: "Continuar no Asaas" })
+              .count(),
+            1,
+          );
+        } else {
+          await publicPage
+            .getByText(messages[status], { exact: false })
+            .waitFor();
+          assert.equal(
+            await publicPage
+              .getByRole("button", { name: "Continuar no Asaas" })
+              .count(),
+            0,
+          );
+        }
+      }
+      await db.asaasCheckout.create({
+        data: {
+          saleId: fixture.sale.id,
+          status: "PAID",
+          providerId: "historical_ui_paid",
+          publicToken: randomUUID().replaceAll("-", "").repeat(2),
+          amount: checkout.amount,
+          terms: {
+            title: "Histórico teste",
+            description: "Checkout de teste",
+            clientName: fixture.sale.clientName,
+            maxInstallments: 1,
+          },
+          expiresAt: new Date(Date.now() - 1000),
+        },
+      });
+      await db.asaasCheckout.update({
+        where: { id: checkout.id },
+        data: { status: "ACTIVE" },
+      });
+      await page.goto(`${origin}/financeiro/vendas/${fixture.sale.id}`);
+      assert.equal(
+        await page
+          .getByRole("link", { name: "Abrir link de pagamento", exact: true })
+          .count(),
+        0,
+      );
+      await publicPage.goto(`${origin}/pagamento/${checkout.publicToken}`);
+      await publicPage.getByText(/já possui um checkout pago/).waitFor();
+      assert.equal(
+        await publicPage
+          .getByRole("button", { name: "Continuar no Asaas" })
+          .count(),
+        0,
+      );
+      await db.asaasEvent.create({
+        data: {
+          id: failedEventId,
+          userId: owner,
+          event: "CHECKOUT_CREATED",
+          resourceId: "unassociated_ui_test",
+          attempts: 8,
+          failedAt: new Date(),
+          error: "Checkout aguardando associação.",
+        },
+      });
+      await page.reload();
+      await page
+        .getByText("Eventos aguardando revisão (1)", { exact: true })
+        .click();
+      await page
+        .getByRole("button", {
+          name: "Reavaliar eventos com falha",
+          exact: true,
+        })
+        .click();
+      await page.getByText(/1 exigem revisão manual/).waitFor();
+      assert.equal(
+        (
+          await db.asaasEvent.findUniqueOrThrow({
+            where: { id: failedEventId },
+          })
+        ).attempts,
+        9,
+      );
       assert.deepEqual(errors, []);
     } finally {
       await browser.close();
@@ -299,7 +435,9 @@ test(
         if (server.exitCode !== null) resolve();
         else server.once("exit", () => resolve());
       });
-      await db.asaasEvent.deleteMany({ where: { id: eventId } });
+      await db.asaasEvent.deleteMany({
+        where: { id: { in: [eventId, failedEventId] } },
+      });
       await db.asaasCheckout.deleteMany({ where: { saleId: fixture.sale.id } });
       await db.asaasPolicy.deleteMany({ where: { userId: owner } });
       await fixture.cleanup();

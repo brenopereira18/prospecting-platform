@@ -1,0 +1,120 @@
+{
+  "source": "Local PostgreSQL categories table, exported with Prisma 7 timestamp semantics",
+  "exportedAt": "2026-11-04T13:24:26.171Z",
+  "categories": [
+    {
+      "id": "03cbabbc-d46b-4889-9805-a147a4627e6a",
+      "name": "Analista Financeiro/investimentos",
+      "prototypeCategoryKey": null,
+      "createdAt": "2026-09-17T13:09:27.486Z"
+    },
+    {
+      "id": "7e2e0e4a-0050-4a63-98c6-138dcab5bb7f",
+      "name": "Barbearia",
+      "prototypeCategoryKey": null,
+      "createdAt": "2026-09-17T13:09:27.486Z"
+    },
+    {
+      "id": "01b1f3af-8115-4211-946f-d9b9b10a6fa9",
+      "name": "Buffer e eventos",
+      "prototypeCategoryKey": null,
+      "createdAt": "2026-09-17T13:09:27.486Z"
+    },
+    {
+      "id": "f6fb1813-e7cb-4117-9259-e5577ce46b1d",
+      "name": "Cafeteria",
+      "prototypeCategoryKey": null,
+      "createdAt": "2026-09-17T13:09:27.486Z"
+    },
+    {
+      "id": "c55f629a-ce68-4ac3-bdc5-ca9594b03aee",
+      "name": "Clínica Médica",
+      "prototypeCategoryKey": null,
+      "createdAt": "2026-09-17T13:09:27.486Z"
+    },
+    {
+      "id": "44e1df43-2ce3-4bdc-9ff4-ad20dd4df511",
+      "name": "Clínica Odontológica",
+      "prototypeCategoryKey": null,
+      "createdAt": "2026-09-17T13:09:27.486Z"
+    },
+    {
+      "id": "bd74c2c6-4dcc-442b-9cb9-f8916f29e417",
+      "name": "Clínica estética",
+      "prototypeCategoryKey": null,
+      "createdAt": "2026-09-17T13:09:27.486Z"
+    },
+    {
+      "id": "dd666ba6-63fc-45f6-9358-4250f573463b",
+      "name": "Contabilidade",
+      "prototypeCategoryKey": null,
+      "createdAt": "2026-09-17T13:09:27.486Z"
+    },
+    {
+      "id": "622e5953-9313-47b2-ae92-a6cab4bb7eac",
+      "name": "Corretor de seguros",
+      "prototypeCategoryKey": null,
+      "createdAt": "2026-09-17T13:09:27.486Z"
+    },
+    {
+      "id": "108bb596-4763-4ace-be13-5a378838bb3f",
+      "name": "Escritório de advocacia",
+      "prototypeCategoryKey": null,
+      "createdAt": "2026-09-17T13:09:27.486Z"
+    },
+    {
+      "id": "ef22951d-921b-4ef2-a1ce-c4af15bd8a03",
+      "name": "Fisioterapia",
+      "prototypeCategoryKey": null,
+      "createdAt": "2026-09-17T13:09:27.486Z"
+    },
+    {
+      "id": "5aacc6d4-5579-46ff-9e50-14cfe57ab84d",
+      "name": "Hamburgueria",
+      "prototypeCategoryKey": "hamburgueria",
+      "createdAt": "2026-09-17T13:09:27.486Z"
+    },
+    {
+      "id": "262f3c59-e753-4cfe-b0be-829c8d4d2c54",
+      "name": "Nutrição",
+      "prototypeCategoryKey": null,
+      "createdAt": "2026-09-17T13:09:27.486Z"
+    },
+    {
+      "id": "ff4eb08a-f297-4f66-906e-753a6bce06ab",
+      "name": "Personal",
+      "prototypeCategoryKey": null,
+      "createdAt": "2026-09-17T13:09:27.486Z"
+    },
+    {
+      "id": "f80c6674-4f16-4a08-ab78-a5f0a5fbfb8f",
+      "name": "Pet Shop",
+      "prototypeCategoryKey": null,
+      "createdAt": "2026-09-17T13:09:27.486Z"
+    },
+    {
+      "id": "746848be-c7f5-4235-bf40-3a55065146e2",
+      "name": "Pizzaria",
+      "prototypeCategoryKey": null,
+      "createdAt": "2026-09-17T13:09:27.486Z"
+    },
+    {
+      "id": "a9dca209-49e2-4f16-b47e-34e4f0f9af62",
+      "name": "Psicologia",
+      "prototypeCategoryKey": null,
+      "createdAt": "2026-09-17T13:09:27.486Z"
+    },
+    {
+      "id": "8ceea5fa-098a-4f26-847f-c3b12650a0bd",
+      "name": "Restaurante",
+      "prototypeCategoryKey": null,
+      "createdAt": "2026-09-17T13:09:27.486Z"
+    },
+    {
+      "id": "ee3235a3-5457-41e6-af33-75a68b5dbc2c",
+      "name": "Salão de beleza",
+      "prototypeCategoryKey": null,
+      "createdAt": "2026-09-17T13:09:27.486Z"
+    }
+  ]
+}

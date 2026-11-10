@@ -3,6 +3,7 @@ import { asaasService } from "@/src/server/finance/asaas.runtime";
 import { checkoutTermsSchema } from "@/src/server/finance/asaas.schema";
 import { formatMoney } from "@/src/server/proposals/proposal.schema";
 import { PublicCheckoutButton } from "@/src/components/finance/asaas-controls";
+import { checkoutState } from "@/src/server/finance/asaas-checkout-state";
 export const dynamic = "force-dynamic";
 export const metadata = {
   title: "Pagamento | Prospecta",
@@ -19,8 +20,7 @@ export default async function PaymentPage({
     .publicCheckout(token)
     .catch(() => notFound());
   const terms = checkoutTermsSchema.parse(row.terms);
-  const available =
-    ["PREPARED", "ACTIVE"].includes(row.status) && row.expiresAt > new Date();
+  const state = checkoutState(row.status, row.expiresAt);
   return (
     <main className="mx-auto w-full max-w-xl space-y-6 px-5 py-12">
       <p className="text-sm font-semibold text-primary">
@@ -45,16 +45,14 @@ export default async function PaymentPage({
             ? "Serviço opcional, contratado separadamente do desenvolvimento. Cobrança automática mensal no cartão mediante autorização abaixo."
             : `Pix ou cartão à vista${terms.maxInstallments > 1 ? `, em até ${terms.maxInstallments} parcelas sem acréscimo pelo Prospecta` : ""}. Confira o total, a quantidade e o valor de cada parcela no Asaas antes de confirmar.`}
         </p>
-        {available ? (
+        {state.canOpen && !row.blockedReason ? (
           <PublicCheckoutButton
             token={token}
             authorization={terms.authorization}
           />
         ) : (
           <p role="status" className="text-sm">
-            Este checkout não está disponível para uma nova contratação.
-            Consulte o prestador para acompanhar o pagamento ou solicitar um
-            novo link.
+            {row.blockedReason ?? state.message}
           </p>
         )}
       </section>

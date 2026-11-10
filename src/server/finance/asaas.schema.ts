@@ -140,7 +140,13 @@ export const webhookSchema = z
         externalReference: z.string().max(200).nullish(),
       })
       .optional(),
-    payment: z.object({ id: providerId }).optional(),
+    payment: z
+      .object({
+        id: providerId,
+        checkoutSession: providerId.nullish(),
+        subscription: providerId.nullish(),
+      })
+      .optional(),
     subscription: z
       .object({
         id: providerId,

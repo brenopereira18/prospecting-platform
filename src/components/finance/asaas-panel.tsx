@@ -3,6 +3,7 @@ import { asaasConfig, AsaasError } from "@/src/server/finance/asaas.client";
 import { CheckoutControls } from "./asaas-controls";
 import { formatMoney } from "@/src/server/proposals/proposal.schema";
 import Link from "next/link";
+import { checkoutState } from "@/src/server/finance/asaas-checkout-state";
 
 function UnavailablePayment({
   contractId,
@@ -91,6 +92,11 @@ export async function AsaasPanel({
   const service = asaasService();
   const rows = await service.list(saleId, contractId ?? null, userId);
   const row = rows[0];
+  const blockedReason = row
+    ? (await service.publicCheckout(row.publicToken)).blockedReason
+    : null;
+  const failedEvents = await service.failedEventsCount(userId);
+  const state = checkoutState(row?.status, row?.expiresAt);
   const labels: Record<string, string> = {
     PREPARED: "Pronto para compartilhar",
     ACTIVE: "Aguardando cliente",
@@ -118,12 +124,14 @@ export async function AsaasPanel({
       {row && (
         <div className="space-y-2 text-sm">
           <p>
-            {labels[row.status] ?? row.status}
+            {state.deadlineElapsed
+              ? "Prazo do link encerrado"
+              : (labels[row.status] ?? row.status)}
             {row.subscriptionStatus
               ? ` · Assinatura: ${row.subscriptionStatus}`
               : ""}
           </p>
-          {["PREPARED", "ACTIVE"].includes(row.status) && (
+          {state.canOpen && !blockedReason && (
             <a
               className="block break-all text-primary underline underline-offset-4"
               href={`/pagamento/${row.publicToken}`}
@@ -134,6 +142,21 @@ export async function AsaasPanel({
                 ? "Abrir contratação mensal"
                 : "Abrir link de pagamento"}
             </a>
+          )}
+          {blockedReason && (
+            <p role="status" className="text-sm text-amber-300">
+              {blockedReason}
+            </p>
+          )}
+          {(state.deadlineElapsed ||
+            ["EXPIRED", "CANCELED", "PAID"].includes(row.status)) && (
+            <p className="text-sm text-secundary">
+              {row.status === "PAID"
+                ? "O checkout foi pago. Concilie para acompanhar as cobranças e os recebimentos."
+                : row.subscriptionId
+                  ? "Esta contratação possui uma assinatura. Concilie a recorrência antes de preparar outro link."
+                  : "Você pode preparar um novo link. Antes da criação, os pagamentos anteriores serão verificados; o histórico será preservado."}
+            </p>
           )}
           {row.lastError && <p className="text-amber-300">{row.lastError}</p>}
         </div>
@@ -151,6 +174,9 @@ export async function AsaasPanel({
         status={row?.status}
         subscriptionId={row?.subscriptionId}
         revision={revision}
+        expiresAt={row?.expiresAt.toISOString()}
+        blockedReason={blockedReason}
+        failedEvents={failedEvents}
       />
       {rows.some((r) => r.payments.length > 0) && (
         <details className="border-t border-sidebar-hover pt-4">
